@@ -9,7 +9,21 @@ Dự án xây dựng một website hỗ trợ:
 
 ---
 
-## 🧑‍💻 Công nghệ sử dụng
+## 🧑‍💻 Technology Stack
+🔹 Backend
+Python (Django / Flask)
+🔹 Frontend
+HTML, CSS, JavaScript
+Bootstrap
+🔹 Database
+MySQL
+🔹 Payment Integration
+VNPAY
+PayPal
+Stripe
+🔹 Shipping Integration
+GHN (Giao Hàng Nhanh)
+Viettel Post
 
 ### 🔹 Backend
 - Python (Django / Flask)
@@ -99,6 +113,13 @@ python app.py
 
 ---
 
+## 🛠️ Development Tools
+Git: Version control system for team collaboration, code management, and conflict resolution.
+Postman: API testing tool for quickly verifying endpoints and detecting issues early.
+Docker: Ensures consistent development and deployment environments, minimizing system-related issues.
+Visual Studio Code / PyCharm: Powerful IDEs with strong support for Python development.
+
+---
 ## 📂 Cấu trúc thư mục
 
 ```
@@ -110,6 +131,25 @@ project/
 └── README.md
 ```
 
+---
+## ⚙️ Environment Setup
+
+### 1. Install Python
+```bash
+python --version
+2. Create virtual environment
+python -m venv venv
+
+Activate:
+
+Windows:
+venv\Scripts\activate
+3. Install dependencies
+pip install -r requirements.txt
+4. Setup database (MySQL)
+CREATE DATABASE ecommerce_db;
+5. Run project
+python manage.py runserver   # Django
 ---
 
 # 🌿 Git Workflow & Quy tắc làm việc nhóm
