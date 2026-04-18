@@ -152,8 +152,7 @@ git push origin feature/<ten-chuc-nang>
 * Thành viên 1: Tô Quang Huy
 * Thành viên 2: Doãn Đức Nghĩa
 * Thành viên 3: Ngô Bá Đạt
-* Thành viên 4: Phạm Thanh Bình
-* Thành viên 5: Mai Xuân Nhân
+* Thành viên 4: Mai Xuân Nhân
 
 ---
 
