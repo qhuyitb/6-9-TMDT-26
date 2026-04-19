@@ -80,6 +80,28 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    # def destroy(self, request, *args, **kwargs):
+    #     """
+    #     Xóa sản phẩm.
+    #     Nếu sản phẩm đang nằm trong đơn hàng chưa hoàn thành thì không xóa cứng,
+    #     thay vào đó chuyển trạng thái sang inactive.
+    #     """
+    #     product = self.get_object()
+
+    #     active_order_statuses = ['pending', 'confirmed', 'preparing', 'shipping']
+    #     in_active_order = product.order_items.filter(
+    #         order__status__in=active_order_statuses
+    #     ).exists()
+
+    #     if in_active_order:
+    #         product.business_status = 'inactive'
+    #         product.save()
+    #         return Response(
+    #             {'message': 'Sản phẩm đang trong đơn hàng xử lý, đã chuyển sang inactive.'},
+    #             status=status.HTTP_200_OK
+    #         )
+
+    #     return super().destroy(request, *args, **kwargs)
     def destroy(self, request, *args, **kwargs):
         """
         Xóa sản phẩm.
@@ -88,18 +110,23 @@ class ProductViewSet(viewsets.ModelViewSet):
         """
         product = self.get_object()
 
-        active_order_statuses = ['pending', 'confirmed', 'preparing', 'shipping']
-        in_active_order = product.order_items.filter(
-            order__status__in=active_order_statuses
-        ).exists()
+        # Kiểm tra order_items khi app orders đã được tạo
+        # Tạm thời xóa trực tiếp, bổ sung sau khi có app orders
+        try:
+            active_order_statuses = ['pending', 'confirmed', 'preparing', 'shipping']
+            in_active_order = product.order_items.filter(
+                order__status__in=active_order_statuses
+            ).exists()
 
-        if in_active_order:
-            product.business_status = 'inactive'
-            product.save()
-            return Response(
-                {'message': 'Sản phẩm đang trong đơn hàng xử lý, đã chuyển sang inactive.'},
-                status=status.HTTP_200_OK
-            )
+            if in_active_order:
+                product.business_status = 'inactive'
+                product.save()
+                return Response(
+                    {'message': 'Sản phẩm đang trong đơn hàng xử lý, đã chuyển sang inactive.'},
+                    status=status.HTTP_200_OK
+                )
+        except AttributeError:
+            pass
 
         return super().destroy(request, *args, **kwargs)
 
