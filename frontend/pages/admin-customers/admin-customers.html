@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Khách hàng – TechShop Admin</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sidebar-w: 230px;
+    --primary: #1a56db;
+    --primary-light: #e8f0fe;
+    --accent: #f59e0b;
+    --bg: #f1f5f9;
+    --sidebar-bg: #0f172a;
+    --sidebar-text: #94a3b8;
+    --text-main: #1e293b;
+    --text-sub: #64748b;
+    --border: #e2e8f0;
+    --success: #10b981;
+    --danger: #ef4444;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', sans-serif; background: var(--bg); color: var(--text-main); display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar { width: var(--sidebar-w); background: var(--sidebar-bg); min-height: 100vh; position: fixed; top: 0; left: 0; display: flex; flex-direction: column; z-index: 100; }
+  .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; gap: 10px; }
+  .sidebar-logo .logo-icon { width: 36px; height: 36px; background: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; }
+  .sidebar-logo span { color: white; font-weight: 700; font-size: 15px; line-height: 1.2; }
+  .sidebar-logo small { color: var(--sidebar-text); font-size: 11px; display: block; font-weight: 400; }
+  .sidebar-nav { padding: 12px 0; flex: 1; overflow-y: auto; }
+  .nav-section-label { color: #475569; font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; padding: 10px 20px 4px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; color: var(--sidebar-text); text-decoration: none; font-size: 13.5px; font-weight: 500; transition: all 0.15s; cursor: pointer; border: none; background: none; width: 100%; }
+  .nav-item:hover { color: white; background: #1e293b; }
+  .nav-item.active { color: white; background: var(--primary); position: relative; }
+  .nav-item.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); border-radius: 0 2px 2px 0; }
+  .nav-item i { font-size: 16px; width: 20px; text-align: center; }
+
+  /* Main */
+  .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* Topbar */
+  .topbar { background: white; border-bottom: 1px solid var(--border); padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .topbar-left { display: flex; align-items: center; gap: 8px; color: var(--text-sub); font-size: 13.5px; }
+  .topbar-left strong { color: var(--text-main); font-size: 15px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .topbar-icon-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border); background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-sub); font-size: 16px; position: relative; transition: all 0.15s; }
+  .topbar-icon-btn:hover { background: var(--bg); }
+  .badge-dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; background: #ef4444; border-radius: 50%; border: 1.5px solid white; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: white; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+  /* Page */
+  .page-content { padding: 28px; flex: 1; }
+  .page-title { font-size: 20px; font-weight: 700; margin-bottom: 3px; }
+  .page-subtitle { font-size: 13px; color: var(--text-sub); margin-bottom: 20px; }
+
+  /* Stat cards */
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 22px; }
+  .stat-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; }
+  .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .stat-icon.blue { background: var(--primary-light); color: var(--primary); }
+  .stat-icon.green { background: #d1fae5; color: var(--success); }
+  .stat-icon.red { background: #fee2e2; color: var(--danger); }
+  .stat-value { font-size: 22px; font-weight: 700; line-height: 1; }
+  .stat-label { font-size: 12px; color: var(--text-sub); margin-top: 3px; }
+
+  /* Toolbar */
+  .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .search-box { display: flex; align-items: center; gap: 8px; background: white; border: 1px solid var(--border); border-radius: 8px; padding: 0 14px; height: 38px; flex: 1; min-width: 220px; max-width: 380px; }
+  .search-box i { color: var(--text-sub); font-size: 15px; }
+  .search-box input { border: none; outline: none; font-size: 13.5px; font-family: inherit; background: transparent; width: 100%; color: var(--text-main); }
+  .search-box input::placeholder { color: #94a3b8; }
+  .filter-select { height: 38px; border: 1px solid var(--border); border-radius: 8px; padding: 0 12px; font-size: 13.5px; font-family: inherit; background: white; color: var(--text-main); cursor: pointer; outline: none; }
+  .filter-select:focus { border-color: var(--primary); }
+
+  /* Table */
+  .table-card { background: white; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .table-card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .table-card-header span { font-size: 14px; font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th { padding: 11px 16px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; background: #f8fafc; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #f8fafc; }
+  tbody td { padding: 13px 16px; font-size: 13.5px; vertical-align: middle; }
+
+  .customer-info { display: flex; align-items: center; gap: 10px; }
+  .cust-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--primary-light); color: var(--primary); font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .cust-name { font-weight: 600; font-size: 13.5px; }
+  .cust-email { font-size: 12px; color: var(--text-sub); }
+
+  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .badge-active { background: #d1fae5; color: #065f46; }
+  .badge-inactive { background: #fee2e2; color: #991b1b; }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 7px; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { background: #dc2626; }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #059669; }
+  .btn-ghost { background: white; color: var(--text-main); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--bg); }
+
+  .btn-icon { width: 32px; height: 32px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; cursor: pointer; border: 1px solid var(--border); background: white; color: var(--text-sub); transition: all 0.15s; }
+  .btn-icon:hover { background: var(--bg); }
+  .btn-icon.danger:hover { background: #fee2e2; color: var(--danger); border-color: #fca5a5; }
+  .btn-icon.success:hover { background: #d1fae5; color: var(--success); border-color: #6ee7b7; }
+
+  /* Pagination */
+  .pagination { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--border); }
+  .pagination-info { font-size: 13px; color: var(--text-sub); }
+  .pagination-btns { display: flex; gap: 6px; }
+  .page-btn { width: 32px; height: 32px; border-radius: 7px; border: 1px solid var(--border); background: white; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-main); transition: all 0.15s; font-family: inherit; }
+  .page-btn:hover:not(:disabled) { background: var(--bg); }
+  .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+  .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Empty/Loading */
+  .table-placeholder { text-align: center; padding: 52px 20px; color: var(--text-sub); }
+  .table-placeholder i { font-size: 38px; display: block; margin-bottom: 10px; opacity: 0.35; }
+  .table-placeholder p { font-size: 14px; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal { background: white; border-radius: 14px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; transform: translateY(14px); transition: transform 0.2s; box-shadow: 0 20px 60px rgba(0,0,0,0.18); }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h3 { font-size: 16px; font-weight: 700; }
+  .modal-close { width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text-sub); line-height: 1; transition: all 0.15s; }
+  .modal-close:hover { background: var(--bg); }
+  .modal-body { padding: 22px 24px 8px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+
+  .modal-avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--primary-light); color: var(--primary); font-size: 22px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; }
+  .detail-section { font-size: 11.5px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.7px; margin: 16px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .detail-row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .detail-label { font-size: 13px; color: var(--text-sub); min-width: 120px; padding-top: 1px; }
+  .detail-value { font-size: 13.5px; font-weight: 500; flex: 1; word-break: break-all; }
+
+  /* Confirm modal */
+  .confirm-icon { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 14px; }
+  .confirm-icon.lock { background: #fee2e2; color: var(--danger); }
+  .confirm-icon.unlock { background: #d1fae5; color: var(--success); }
+  .confirm-title { font-size: 16px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+  .confirm-desc { font-size: 13.5px; color: var(--text-sub); text-align: center; line-height: 1.6; }
+
+  /* Toast */
+  .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 10px; }
+  .toast { background: #1e293b; color: white; padding: 12px 18px; border-radius: 10px; font-size: 13.5px; font-weight: 500; display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); animation: toastIn 0.25s ease; }
+  .toast.success { background: #065f46; }
+  .toast.error { background: #991b1b; }
+  @keyframes toastIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin 0.8s linear infinite; display: inline-block; }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon"><i class="bi bi-cpu"></i></div>
+    <div><span>TechShop</span><small>Admin Panel</small></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Tổng quan</div>
+    <a class="nav-item" href="/admin-home/"><i class="bi bi-grid-1x2"></i> Trang chủ</a>
+    <div class="nav-section-label">Quản lý</div>
+    <a class="nav-item active" href="/admin-customers/"><i class="bi bi-people"></i> Khách hàng</a>
+    <a class="nav-item" href="/admin-orders/"><i class="bi bi-bag"></i> Đơn hàng</a>
+    <a class="nav-item" href="/admin-dashboard/"><i class="bi bi-box-seam"></i> Sản phẩm</a>
+    <a class="nav-item" href="/admin-categories/"><i class="bi bi-tags"></i> Loại sản phẩm</a>
+    <a class="nav-item" href="/admin-reviews/"><i class="bi bi-star"></i> Đánh giá KH</a>
+    <div class="nav-section-label">Thống kê</div>
+    <a class="nav-item" href="/admin-top-categories/"><i class="bi bi-fire"></i> Danh mục bán chạy</a>
+    <a class="nav-item" href="/admin-top-products/"><i class="bi bi-trophy"></i> Sản phẩm bán chạy</a>
+    <a class="nav-item" href="/admin-inventory/"><i class="bi bi-archive"></i> Hàng tồn kho</a>
+  </nav>
+</aside>
+
+<!-- ── Main ── -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span>Quản lý</span>
+      <i class="bi bi-chevron-right" style="font-size:11px"></i>
+      <strong>Khách hàng</strong>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-icon-btn"><i class="bi bi-bell"></i><span class="badge-dot"></span></div>
+      <div class="avatar">AD</div>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="page-title">Danh sách khách hàng</div>
+    <div class="page-subtitle">Quản lý tài khoản và trạng thái khách hàng</div>
+
+    <!-- Stat cards -->
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="bi bi-people"></i></div>
+        <div><div class="stat-value" id="stat-total">–</div><div class="stat-label">Tổng khách hàng</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="bi bi-person-check"></i></div>
+        <div><div class="stat-value" id="stat-active">–</div><div class="stat-label">Đang hoạt động</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="bi bi-person-x"></i></div>
+        <div><div class="stat-value" id="stat-locked">–</div><div class="stat-label">Đã khóa</div></div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" id="search-input" placeholder="Tìm theo tên, email, SĐT...">
+      </div>
+      <select class="filter-select" id="status-filter">
+        <option value="">Tất cả trạng thái</option>
+        <option value="active">Hoạt động</option>
+        <option value="inactive">Đã khóa</option>
+      </select>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-card-header">
+        <span>Khách hàng &nbsp;<span id="table-count" style="color:var(--text-sub);font-weight:400;font-size:13px"></span></span>
+      </div>
+      <div id="table-wrapper">
+        <div class="table-placeholder"><i class="bi bi-arrow-repeat spin"></i><p>Đang tải dữ liệu...</p></div>
+      </div>
+      <div class="pagination" id="pagination" style="display:none">
+        <div class="pagination-info" id="pagination-info"></div>
+        <div class="pagination-btns" id="pagination-btns"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Detail Modal ── -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Chi tiết khách hàng</h3>
+      <button class="modal-close" onclick="closeModal('detail-modal')">&times;</button>
+    </div>
+    <div class="modal-body" id="detail-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('detail-modal')">Đóng</button>
+      <button class="btn" id="detail-action-btn" onclick="openConfirmFromDetail()"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Confirm Modal ── -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="width:400px">
+    <div class="modal-body" style="padding:28px 24px 8px;text-align:center">
+      <div class="confirm-icon" id="confirm-icon"></div>
+      <div class="confirm-title" id="confirm-title"></div>
+      <div class="confirm-desc" id="confirm-desc"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('confirm-modal')">Hủy</button>
+      <button class="btn" id="confirm-btn" onclick="executeToggle()"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// Auth guard
+(function() {
+  const token = localStorage.getItem('access_token');
+  const role  = localStorage.getItem('user_role');
+  if (!token || role !== 'admin') window.location.href = '/admin-login/';
+})();
+
+const API = '/api/admin';
+const PAGE_SIZE = 10;
+
+let customers = [];   // current result set from API
+let currentPage = 1;
+let selectedCustomer = null;
+let searchTimer = null;
+
+// ── Fetch customers from API ──────────────────────────────────
+async function fetchCustomers() {
+  showLoading();
+  const params = new URLSearchParams();
+  const q = document.getElementById('search-input').value.trim();
+  const s = document.getElementById('status-filter').value;
+  if (q) params.set('search', q);
+  if (s) params.set('status', s);
+
+  try {
+    const res = await fetch(`${API}/customers/?${params}`, {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('access_token') }
+    });
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    customers = Array.isArray(data) ? data : (data.results ?? []);
+    currentPage = 1;
+    renderStats();
+    renderTable();
+  } catch (e) {
+    document.getElementById('table-wrapper').innerHTML = `
+      <div class="table-placeholder">
+        <i class="bi bi-exclamation-circle"></i>
+        <p>Không thể tải dữ liệu. Vui lòng thử lại.</p>
+      </div>`;
+    document.getElementById('pagination').style.display = 'none';
+  }
+}
+
+function showLoading() {
+  document.getElementById('table-wrapper').innerHTML =
+    '<div class="table-placeholder"><i class="bi bi-arrow-repeat spin"></i><p>Đang tải dữ liệu...</p></div>';
+  document.getElementById('pagination').style.display = 'none';
+  document.getElementById('table-count').textContent = '';
+}
+
+// ── Stats ────────────────────────────────────────────────────
+function renderStats() {
+  document.getElementById('stat-total').textContent  = customers.length;
+  document.getElementById('stat-active').textContent = customers.filter(c => c.status === 'active').length;
+  document.getElementById('stat-locked').textContent = customers.filter(c => c.status !== 'active').length;
+}
+
+// ── Table ─────────────────────────────────────────────────────
+function renderTable() {
+  const total = customers.length;
+  if (total === 0) {
+    document.getElementById('table-wrapper').innerHTML =
+      '<div class="table-placeholder"><i class="bi bi-people"></i><p>Không tìm thấy khách hàng nào.</p></div>';
+    document.getElementById('pagination').style.display = 'none';
+    document.getElementById('table-count').textContent = '(0)';
+    return;
+  }
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (currentPage > totalPages) currentPage = totalPages;
+  const slice = customers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  document.getElementById('table-count').textContent = `(${total})`;
+  document.getElementById('table-wrapper').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Khách hàng</th>
+          <th>Số điện thoại</th>
+          <th>Trạng thái</th>
+          <th>Ngày tham gia</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${slice.map(c => rowHtml(c)).join('')}
+      </tbody>
+    </table>`;
+
+  renderPagination(total, totalPages);
+}
+
+function rowHtml(c) {
+  const initials = (c.full_name || c.email || '?').slice(0, 2).toUpperCase();
+  const isActive = c.status === 'active';
+  const badge    = isActive
+    ? '<span class="badge badge-active">Hoạt động</span>'
+    : '<span class="badge badge-inactive">Đã khóa</span>';
+  const date = c.created_at ? new Date(c.created_at).toLocaleDateString('vi-VN') : '–';
+  const actionBtn = isActive
+    ? `<button class="btn-icon danger" title="Khóa tài khoản" onclick="openConfirm(${c.id},'lock')"><i class="bi bi-lock"></i></button>`
+    : `<button class="btn-icon success" title="Mở tài khoản"  onclick="openConfirm(${c.id},'unlock')"><i class="bi bi-unlock"></i></button>`;
+
+  return `<tr>
+    <td>
+      <div class="customer-info">
+        <div class="cust-avatar">${initials}</div>
+        <div>
+          <div class="cust-name">${esc(c.full_name || '–')}</div>
+          <div class="cust-email">${esc(c.email || '')}</div>
+        </div>
+      </div>
+    </td>
+    <td>${esc(c.phone || '–')}</td>
+    <td>${badge}</td>
+    <td>${date}</td>
+    <td style="display:flex;gap:6px;align-items:center">
+      <button class="btn-icon" title="Xem chi tiết" onclick="openDetail(${c.id})"><i class="bi bi-eye"></i></button>
+      ${actionBtn}
+    </td>
+  </tr>`;
+}
+
+// ── Pagination ────────────────────────────────────────────────
+function renderPagination(total, totalPages) {
+  const pag = document.getElementById('pagination');
+  pag.style.display = 'flex';
+  const s = (currentPage - 1) * PAGE_SIZE + 1;
+  const e = Math.min(currentPage * PAGE_SIZE, total);
+  document.getElementById('pagination-info').textContent = `Hiển thị ${s}–${e} / ${total} khách hàng`;
+
+  let html = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}><i class="bi bi-chevron-left" style="font-size:11px"></i></button>`;
+  for (let i = 1; i <= totalPages; i++) {
+    if (totalPages <= 7 || i===1 || i===totalPages || Math.abs(i-currentPage)<=1) {
+      html += `<button class="page-btn${i===currentPage?' active':''}" onclick="goPage(${i})">${i}</button>`;
+    } else if (Math.abs(i-currentPage)===2) {
+      html += `<button class="page-btn" disabled>…</button>`;
+    }
+  }
+  html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}><i class="bi bi-chevron-right" style="font-size:11px"></i></button>`;
+  document.getElementById('pagination-btns').innerHTML = html;
+}
+
+function goPage(p) {
+  const max = Math.ceil(customers.length / PAGE_SIZE);
+  if (p < 1 || p > max) return;
+  currentPage = p;
+  renderTable();
+}
+
+// ── Detail modal ──────────────────────────────────────────────
+function openDetail(id) {
+  const c = customers.find(x => x.id === id);
+  if (!c) return;
+  selectedCustomer = c;
+
+  const isActive = c.status === 'active';
+  const badge    = isActive
+    ? '<span class="badge badge-active">Hoạt động</span>'
+    : '<span class="badge badge-inactive">Đã khóa</span>';
+
+  document.getElementById('detail-body').innerHTML = `
+    <div class="modal-avatar">${(c.full_name || c.email || '?').slice(0,2).toUpperCase()}</div>
+    <div class="detail-section">Thông tin cá nhân</div>
+    <div class="detail-row"><span class="detail-label">Họ tên</span><span class="detail-value">${esc(c.full_name||'–')}</span></div>
+    <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${esc(c.email||'–')}</span></div>
+    <div class="detail-row"><span class="detail-label">Số điện thoại</span><span class="detail-value">${esc(c.phone||'–')}</span></div>
+    <div class="detail-row"><span class="detail-label">Vai trò</span><span class="detail-value">${esc(c.role||'–')}</span></div>
+    <div class="detail-row"><span class="detail-label">Trạng thái</span><span class="detail-value">${badge}</span></div>
+    <div class="detail-section">Thời gian</div>
+    <div class="detail-row"><span class="detail-label">Ngày tham gia</span><span class="detail-value">${c.created_at ? new Date(c.created_at).toLocaleString('vi-VN') : '–'}</span></div>
+    <div class="detail-row"><span class="detail-label">Cập nhật lần cuối</span><span class="detail-value">${c.updated_at ? new Date(c.updated_at).toLocaleString('vi-VN') : '–'}</span></div>
+  `;
+
+  const btn = document.getElementById('detail-action-btn');
+  if (isActive) {
+    btn.textContent = 'Khóa tài khoản';
+    btn.className = 'btn btn-danger';
+  } else {
+    btn.textContent = 'Mở tài khoản';
+    btn.className = 'btn btn-success';
+  }
+
+  openModal('detail-modal');
+}
+
+function openConfirmFromDetail() {
+  if (!selectedCustomer) return;
+  closeModal('detail-modal');
+  openConfirm(selectedCustomer.id, selectedCustomer.status === 'active' ? 'lock' : 'unlock');
+}
+
+// ── Confirm modal ─────────────────────────────────────────────
+function openConfirm(id, action) {
+  const c = customers.find(x => x.id === id);
+  if (!c) return;
+  selectedCustomer = c;
+
+  const icon  = document.getElementById('confirm-icon');
+  const title = document.getElementById('confirm-title');
+  const desc  = document.getElementById('confirm-desc');
+  const btn   = document.getElementById('confirm-btn');
+
+  if (action === 'lock') {
+    icon.className = 'confirm-icon lock';
+    icon.innerHTML = '<i class="bi bi-lock"></i>';
+    title.textContent = 'Khóa tài khoản?';
+    desc.textContent  = `"${esc(c.full_name || c.email)}" sẽ không thể đăng nhập cho đến khi được mở lại.`;
+    btn.textContent   = 'Khóa tài khoản';
+    btn.className     = 'btn btn-danger';
+  } else {
+    icon.className = 'confirm-icon unlock';
+    icon.innerHTML = '<i class="bi bi-unlock"></i>';
+    title.textContent = 'Mở tài khoản?';
+    desc.textContent  = `"${esc(c.full_name || c.email)}" sẽ được phép đăng nhập trở lại.`;
+    btn.textContent   = 'Mở tài khoản';
+    btn.className     = 'btn btn-success';
+  }
+
+  openModal('confirm-modal');
+}
+
+// ── Toggle status (PATCH) ─────────────────────────────────────
+async function executeToggle() {
+  if (!selectedCustomer) return;
+  closeModal('confirm-modal');
+
+  const newStatus = selectedCustomer.status === 'active' ? 'inactive' : 'active';
+  try {
+    const res = await fetch(`${API}/customers/${selectedCustomer.id}/`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': 'Bearer ' + localStorage.getItem('access_token'),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ status: newStatus })
+    });
+    if (!res.ok) throw new Error();
+
+    // Update local data without re-fetching
+    const idx = customers.findIndex(x => x.id === selectedCustomer.id);
+    if (idx !== -1) customers[idx].status = newStatus;
+    renderStats();
+    renderTable();
+
+    showToast(newStatus === 'inactive' ? 'Đã khóa tài khoản thành công' : 'Đã mở tài khoản thành công', 'success');
+  } catch {
+    showToast('Có lỗi xảy ra, vui lòng thử lại.', 'error');
+  }
+}
+
+// ── Modal helpers ─────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(el =>
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); })
+);
+
+// ── Toast ─────────────────────────────────────────────────────
+function showToast(msg, type = '') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  const icon = type === 'success' ? 'bi-check-circle' : 'bi-x-circle';
+  t.innerHTML = `<i class="bi ${icon}"></i>${msg}`;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ── Escape HTML ───────────────────────────────────────────────
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Events ───────────────────────────────────────────────────
+document.getElementById('search-input').addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(fetchCustomers, 400);
+});
+document.getElementById('status-filter').addEventListener('change', fetchCustomers);
+
+// ── Init ─────────────────────────────────────────────────────
+fetchCustomers();
+</script>
+</body>
+</html>

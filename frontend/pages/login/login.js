@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         searchBtn.addEventListener('click', () => {
             const q = searchInput.value.trim();
-            if (q) window.location.href = `/products/?search=${encodeURIComponent(q)}`;
+            if (q) window.location.href = `/shop/?search=${encodeURIComponent(q)}`;
         });
     }
 
@@ -128,8 +128,9 @@ if (loginForm) {
         if (res.ok) {
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('refresh_token', data.refresh_token);
+            localStorage.setItem('user_role', data.user ? data.user.role : '');
             if (data.user && data.user.role === 'admin') {
-                window.location.href = '/products/';
+                window.location.href = '/admin-dashboard/';
             } else {
                 window.location.href = '/shop/';
             }

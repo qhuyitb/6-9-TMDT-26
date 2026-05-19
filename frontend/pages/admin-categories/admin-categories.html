@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loại sản phẩm – TechShop Admin</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sidebar-w: 230px;
+    --primary: #1a56db;
+    --accent: #f59e0b;
+    --bg: #f1f5f9;
+    --sidebar-bg: #0f172a;
+    --sidebar-text: #94a3b8;
+    --text-main: #1e293b;
+    --text-sub: #64748b;
+    --border: #e2e8f0;
+    --danger: #ef4444;
+    --success: #22c55e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', sans-serif; background: var(--bg); color: var(--text-main); display: flex; min-height: 100vh; }
+
+  /* SIDEBAR */
+  .sidebar { width: var(--sidebar-w); background: var(--sidebar-bg); min-height: 100vh; position: fixed; top: 0; left: 0; display: flex; flex-direction: column; z-index: 100; }
+  .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; gap: 10px; }
+  .sidebar-logo .logo-icon { width: 36px; height: 36px; background: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; }
+  .sidebar-logo span { color: white; font-weight: 700; font-size: 15px; line-height: 1.2; }
+  .sidebar-logo small { color: var(--sidebar-text); font-size: 11px; display: block; font-weight: 400; }
+  .sidebar-nav { padding: 12px 0; flex: 1; }
+  .nav-section-label { color: #475569; font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; padding: 10px 20px 4px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; color: var(--sidebar-text); text-decoration: none; font-size: 13.5px; font-weight: 500; transition: all 0.15s; cursor: pointer; border: none; background: none; width: 100%; }
+  .nav-item:hover { color: white; background: #1e293b; }
+  .nav-item.active { color: white; background: var(--primary); position: relative; }
+  .nav-item.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); border-radius: 0 2px 2px 0; }
+  .nav-item i { font-size: 16px; width: 20px; text-align: center; }
+
+  /* MAIN */
+  .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+  .topbar { background: white; border-bottom: 1px solid var(--border); padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .topbar-left { display: flex; align-items: center; gap: 8px; color: var(--text-sub); font-size: 13.5px; }
+  .topbar-left strong { color: var(--text-main); font-size: 15px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .topbar-icon-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border); background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-sub); font-size: 16px; position: relative; transition: all 0.15s; }
+  .topbar-icon-btn:hover { background: var(--bg); }
+  .badge-dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; background: #ef4444; border-radius: 50%; border: 1.5px solid white; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: white; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+  /* PAGE */
+  .page-content { padding: 28px; flex: 1; }
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+  .page-title { font-size: 20px; font-weight: 700; }
+  .page-subtitle { font-size: 13px; color: var(--text-sub); margin-top: 3px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 8px; font-size: 13.5px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; font-family: inherit; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: #1648c0; }
+  .btn-danger { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+  .btn-danger:hover { background: #fee2e2; }
+  .btn-secondary { background: white; color: var(--text-main); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-sm { padding: 6px 12px; font-size: 12.5px; }
+
+  /* TOOLBAR */
+  .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .search-box { display: flex; align-items: center; gap: 8px; background: white; border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; flex: 1; max-width: 320px; }
+  .search-box i { color: var(--text-sub); font-size: 15px; }
+  .search-box input { border: none; outline: none; font-size: 13.5px; font-family: inherit; color: var(--text-main); width: 100%; background: transparent; }
+  .search-box input::placeholder { color: var(--text-sub); }
+
+  /* TABLE */
+  .card { background: white; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .card-header-title { font-size: 14px; font-weight: 600; }
+  .count-badge { background: var(--bg); color: var(--text-sub); font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { padding: 12px 20px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; background: #f8fafc; border-bottom: 1px solid var(--border); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #f8fafc; }
+  tbody td { padding: 14px 20px; font-size: 13.5px; vertical-align: middle; }
+  .cat-icon { width: 36px; height: 36px; border-radius: 8px; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .cat-name { font-weight: 600; color: var(--text-main); }
+  .cat-slug { font-size: 12px; color: var(--text-sub); margin-top: 2px; font-family: monospace; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .badge-active { background: #f0fdf4; color: #16a34a; }
+  .badge-inactive { background: #fef2f2; color: #dc2626; }
+  .badge-dot-sm { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .actions { display: flex; gap: 6px; }
+  .icon-btn { width: 32px; height: 32px; border-radius: 7px; border: 1px solid var(--border); background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; color: var(--text-sub); transition: all 0.15s; }
+  .icon-btn:hover.edit { background: #eff6ff; color: var(--primary); border-color: #bfdbfe; }
+  .icon-btn:hover.delete { background: #fef2f2; color: var(--danger); border-color: #fecaca; }
+
+  /* EMPTY */
+  .empty-state { padding: 60px 20px; text-align: center; color: var(--text-sub); }
+  .empty-state i { font-size: 40px; margin-bottom: 12px; color: var(--border); }
+  .empty-state p { font-size: 14px; }
+
+  /* LOADING */
+  .loading-state { padding: 60px 20px; text-align: center; color: var(--text-sub); }
+  .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+  .modal { background: white; border-radius: 14px; padding: 28px; width: 100%; max-width: 460px; transform: translateY(16px); transition: transform 0.2s; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+  .modal-overlay.show .modal { transform: translateY(0); }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 20px; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block; color: var(--text-main); }
+  .form-label span { color: var(--danger); }
+  .form-control { width: 100%; padding: 9px 13px; border: 1px solid var(--border); border-radius: 8px; font-size: 13.5px; font-family: inherit; color: var(--text-main); outline: none; transition: border 0.15s; }
+  .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,86,219,0.1); }
+  .form-control.error { border-color: var(--danger); }
+  .form-hint { font-size: 12px; color: var(--text-sub); margin-top: 4px; }
+  .form-error { font-size: 12px; color: var(--danger); margin-top: 4px; display: none; }
+  .form-error.show { display: block; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--border); margin-top: 4px; }
+  .toggle-label { font-size: 13.5px; font-weight: 500; }
+  .toggle { position: relative; width: 40px; height: 22px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: #cbd5e1; border-radius: 22px; cursor: pointer; transition: 0.2s; }
+  .toggle-slider::before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+  .toggle input:checked + .toggle-slider { background: var(--primary); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+  /* CONFIRM MODAL */
+  .confirm-icon { width: 52px; height: 52px; border-radius: 50%; background: #fef2f2; color: var(--danger); font-size: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+  .confirm-title { text-align: center; font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+  .confirm-desc { text-align: center; font-size: 13.5px; color: var(--text-sub); margin-bottom: 24px; }
+
+  /* TOAST */
+  .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 10px; }
+  .toast { background: #1e293b; color: white; padding: 12px 18px; border-radius: 10px; font-size: 13.5px; font-weight: 500; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); animation: slideIn 0.3s ease; max-width: 320px; }
+  .toast.success { background: #15803d; }
+  .toast.error { background: #b91c1c; }
+  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+  .toast.hide { animation: slideOut 0.3s ease forwards; }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon"><i class="bi bi-cpu"></i></div>
+    <div><span>TechShop</span><small>Admin Panel</small></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Tổng quan</div>
+    <a class="nav-item" href="/admin-home/"><i class="bi bi-grid-1x2"></i> Trang chủ</a>
+    <div class="nav-section-label">Quản lý</div>
+    <a class="nav-item" href="/admin-customers/"><i class="bi bi-people"></i> Khách hàng</a>
+    <a class="nav-item" href="/admin-orders/"><i class="bi bi-bag"></i> Đơn hàng</a>
+    <a class="nav-item" href="/admin-dashboard/"><i class="bi bi-box-seam"></i> Sản phẩm</a>
+    <a class="nav-item active" href="/admin-categories/"><i class="bi bi-tags"></i> Loại sản phẩm</a>
+    <a class="nav-item" href="/admin-reviews/"><i class="bi bi-star"></i> Đánh giá KH</a>
+    <div class="nav-section-label">Thống kê</div>
+    <a class="nav-item" href="/admin-top-categories/"><i class="bi bi-fire"></i> Danh mục bán chạy</a>
+    <a class="nav-item" href="/admin-top-products/"><i class="bi bi-trophy"></i> Sản phẩm bán chạy</a>
+    <a class="nav-item" href="/admin-inventory/"><i class="bi bi-archive"></i> Hàng tồn kho</a>
+  </nav>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span>Quản lý</span>
+      <i class="bi bi-chevron-right" style="font-size:11px"></i>
+      <strong>Loại sản phẩm</strong>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-icon-btn"><i class="bi bi-bell"></i><span class="badge-dot"></span></div>
+      <div class="avatar">AD</div>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Quản lý loại sản phẩm</div>
+        <div class="page-subtitle">Thêm, sửa, xoá các danh mục sản phẩm trong hệ thống.</div>
+      </div>
+      <button class="btn btn-primary" onclick="openAddModal()">
+        <i class="bi bi-plus-lg"></i> Thêm danh mục
+      </button>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" id="searchInput" placeholder="Tìm tên danh mục..." oninput="filterTable()">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-header-title">Danh sách danh mục</span>
+        <span class="count-badge" id="countBadge">0 danh mục</span>
+      </div>
+      <div id="tableWrapper">
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL THÊM / SỬA -->
+<div class="modal-overlay" id="formModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Thêm danh mục mới</div>
+    <div class="form-group">
+      <label class="form-label">Tên danh mục <span>*</span></label>
+      <input type="text" class="form-control" id="fieldName" placeholder="VD: Laptop, Điện thoại..." oninput="autoSlug()">
+      <div class="form-error" id="errName">Vui lòng nhập tên danh mục.</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Slug <span>*</span></label>
+      <input type="text" class="form-control" id="fieldSlug" placeholder="VD: laptop, dien-thoai">
+      <div class="form-hint">Dùng để tạo URL, chỉ gồm chữ thường và dấu gạch ngang.</div>
+      <div class="form-error" id="errSlug">Vui lòng nhập slug.</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mô tả</label>
+      <textarea class="form-control" id="fieldDesc" rows="3" placeholder="Mô tả ngắn về danh mục (tuỳ chọn)"></textarea>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Kích hoạt danh mục</span>
+      <label class="toggle">
+        <input type="checkbox" id="fieldActive" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('formModal')">Huỷ</button>
+      <button class="btn btn-primary" id="submitBtn" onclick="submitForm()">
+        <i class="bi bi-check-lg"></i> Lưu danh mục
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL XÁC NHẬN XOÁ -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:380px">
+    <div class="confirm-icon"><i class="bi bi-trash3"></i></div>
+    <div class="confirm-title">Xoá danh mục?</div>
+    <div class="confirm-desc" id="confirmDesc">Hành động này không thể hoàn tác.</div>
+    <div class="modal-footer" style="justify-content:center">
+      <button class="btn btn-secondary" onclick="closeModal('confirmModal')">Huỷ</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()">
+        <i class="bi bi-trash3"></i> Xoá
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  const API = 'http://localhost:8000/api/categories/';
+  const token = localStorage.getItem('access_token');
+  const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+
+  let allCategories = [];
+  let editingId = null;
+  let deletingId = null;
+
+  // AUTH CHECK
+  (function() {
+    const role = localStorage.getItem('user_role');
+    if (!token || role !== 'admin') window.location.href = '/admin-login/';
+  })();
+
+  // FETCH
+  async function loadCategories() {
+    try {
+      const res = await fetch(API, { headers });
+      if (!res.ok) throw new Error();
+      allCategories = await res.json();
+      renderTable(allCategories);
+    } catch {
+      document.getElementById('tableWrapper').innerHTML = `
+        <div class="empty-state">
+          <i class="bi bi-exclamation-circle"></i>
+          <p>Không thể tải dữ liệu. Vui lòng thử lại.</p>
+        </div>`;
+    }
+  }
+
+  function renderTable(data) {
+    const count = data.length;
+    document.getElementById('countBadge').textContent = count + ' danh mục';
+
+    if (count === 0) {
+      document.getElementById('tableWrapper').innerHTML = `
+        <div class="empty-state">
+          <i class="bi bi-tags"></i>
+          <p>Chưa có danh mục nào. Hãy thêm danh mục đầu tiên!</p>
+        </div>`;
+      return;
+    }
+
+    const rows = data.map(cat => `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="cat-icon"><i class="bi bi-tag"></i></div>
+            <div>
+              <div class="cat-name">${escHtml(cat.name)}</div>
+              <div class="cat-slug">${escHtml(cat.slug)}</div>
+            </div>
+          </div>
+        </td>
+        <td style="color:var(--text-sub);font-size:13px">${cat.description ? escHtml(cat.description) : '<span style="color:#cbd5e1">—</span>'}</td>
+        <td>
+          <span class="badge ${cat.is_active ? 'badge-active' : 'badge-inactive'}">
+            <span class="badge-dot-sm"></span>
+            ${cat.is_active ? 'Hoạt động' : 'Ẩn'}
+          </span>
+        </td>
+        <td>
+          <div class="actions">
+            <button class="icon-btn edit" title="Chỉnh sửa" onclick="openEditModal(${cat.id})"><i class="bi bi-pencil"></i></button>
+            <button class="icon-btn delete" title="Xoá" onclick="openConfirmDelete(${cat.id}, '${escHtml(cat.name)}')"><i class="bi bi-trash3"></i></button>
+          </div>
+        </td>
+      </tr>`).join('');
+
+    document.getElementById('tableWrapper').innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Tên danh mục</th>
+            <th>Mô tả</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  function filterTable() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const filtered = allCategories.filter(c => c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q));
+    renderTable(filtered);
+  }
+
+  // MODAL
+  function openAddModal() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'Thêm danh mục mới';
+    document.getElementById('submitBtn').innerHTML = '<i class="bi bi-check-lg"></i> Lưu danh mục';
+    document.getElementById('fieldName').value = '';
+    document.getElementById('fieldSlug').value = '';
+    document.getElementById('fieldDesc').value = '';
+    document.getElementById('fieldActive').checked = true;
+    clearErrors();
+    openModal('formModal');
+  }
+
+  function openEditModal(id) {
+    const cat = allCategories.find(c => c.id === id);
+    if (!cat) return;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'Chỉnh sửa danh mục';
+    document.getElementById('submitBtn').innerHTML = '<i class="bi bi-check-lg"></i> Cập nhật';
+    document.getElementById('fieldName').value = cat.name;
+    document.getElementById('fieldSlug').value = cat.slug;
+    document.getElementById('fieldDesc').value = cat.description || '';
+    document.getElementById('fieldActive').checked = cat.is_active;
+    clearErrors();
+    openModal('formModal');
+  }
+
+  function openConfirmDelete(id, name) {
+    deletingId = id;
+    document.getElementById('confirmDesc').textContent = `Bạn có chắc muốn xoá danh mục "${name}"? Hành động này không thể hoàn tác.`;
+    openModal('confirmModal');
+  }
+
+  function openModal(id) { document.getElementById(id).classList.add('show'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+  // AUTO SLUG
+  function autoSlug() {
+    if (editingId) return;
+    const name = document.getElementById('fieldName').value;
+    document.getElementById('fieldSlug').value = toSlug(name);
+  }
+
+  function toSlug(str) {
+    return str.toLowerCase()
+      .replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, 'a')
+      .replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, 'e')
+      .replace(/ì|í|ị|ỉ|ĩ/g, 'i')
+      .replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, 'o')
+      .replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, 'u')
+      .replace(/ỳ|ý|ỵ|ỷ|ỹ/g, 'y')
+      .replace(/đ/g, 'd')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim().replace(/\s+/g, '-').replace(/-+/g, '-');
+  }
+
+  // SUBMIT
+  async function submitForm() {
+    const name = document.getElementById('fieldName').value.trim();
+    const slug = document.getElementById('fieldSlug').value.trim();
+    const desc = document.getElementById('fieldDesc').value.trim();
+    const isActive = document.getElementById('fieldActive').checked;
+
+    clearErrors();
+    let valid = true;
+    if (!name) { showError('errName'); valid = false; }
+    if (!slug) { showError('errSlug'); valid = false; }
+    if (!valid) return;
+
+    const body = JSON.stringify({ name, slug, description: desc || null, is_active: isActive });
+    const url = editingId ? API + editingId + '/' : API;
+    const method = editingId ? 'PUT' : 'POST';
+
+    try {
+      const res = await fetch(url, { method, headers, body });
+      if (!res.ok) {
+        const err = await res.json();
+        const msg = Object.values(err).flat().join(' ');
+        showToast(msg || 'Có lỗi xảy ra.', 'error');
+        return;
+      }
+      closeModal('formModal');
+      await loadCategories();
+      showToast(editingId ? 'Cập nhật danh mục thành công!' : 'Thêm danh mục thành công!', 'success');
+    } catch {
+      showToast('Không thể kết nối đến server.', 'error');
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deletingId) return;
+    try {
+      const res = await fetch(API + deletingId + '/', { method: 'DELETE', headers });
+      if (!res.ok) throw new Error();
+      closeModal('confirmModal');
+      await loadCategories();
+      showToast('Đã xoá danh mục.', 'success');
+    } catch {
+      showToast('Không thể xoá danh mục.', 'error');
+    }
+    deletingId = null;
+  }
+
+  // HELPERS
+  function clearErrors() {
+    document.querySelectorAll('.form-error').forEach(e => e.classList.remove('show'));
+    document.querySelectorAll('.form-control').forEach(e => e.classList.remove('error'));
+  }
+  function showError(id) {
+    document.getElementById(id).classList.add('show');
+  }
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function showToast(msg, type = '') {
+    const tc = document.getElementById('toastContainer');
+    const t = document.createElement('div');
+    t.className = 'toast ' + type;
+    t.innerHTML = `<i class="bi bi-${type==='success'?'check-circle':'exclamation-circle'}"></i> ${msg}`;
+    tc.appendChild(t);
+    setTimeout(() => { t.classList.add('hide'); setTimeout(() => t.remove(), 300); }, 3000);
+  }
+
+  // Close modal on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('show'); });
+  });
+
+  loadCategories();
+</script>
+</body>
+</html>

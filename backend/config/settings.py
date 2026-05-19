@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     # Local apps
     'apps.users',
     'apps.products',
+    'apps.admin_api',
+   
 ]
 
 MIDDLEWARE = [
@@ -116,6 +118,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     FRONTEND_DIR / 'pages' / 'login',
+    FRONTEND_DIR / 'pages' / 'admin-login',
 ]
 
 

@@ -1,7 +1,7 @@
 import re
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import User, Cart, CartItem
+from .models import User, Cart, CartItem, UserAddress, Wishlist, WishlistItem
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -84,14 +84,14 @@ class CartItemSerializer(serializers.ModelSerializer):
     product_id = serializers.IntegerField(source='product.id', read_only=True)
     product_name = serializers.CharField(source='product.name', read_only=True)
     brand = serializers.CharField(source='product.brand', read_only=True)
-    price = serializers.DecimalField(source='product.price', max_digits=12, decimal_places=2, read_only=True)
+    unit_price = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     image = serializers.SerializerMethodField()
     line_total = serializers.SerializerMethodField()
 
     class Meta:
         model = CartItem
         fields = [
-            'id', 'product_id', 'product_name', 'brand', 'price',
+            'id', 'product_id', 'product_name', 'brand', 'unit_price',
             'image', 'quantity', 'line_total'
         ]
 
@@ -104,7 +104,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         return request.build_absolute_uri(url) if request else url
 
     def get_line_total(self, obj):
-        return obj.product.price * obj.quantity
+        return obj.unit_price * obj.quantity
 
 
 class CartSerializer(serializers.ModelSerializer):
@@ -120,4 +120,60 @@ class CartSerializer(serializers.ModelSerializer):
         return sum(item.quantity for item in obj.items.all())
 
     def get_total_price(self, obj):
-        return sum(item.product.price * item.quantity for item in obj.items.all())
+        return sum(item.unit_price * item.quantity for item in obj.items.all())
+
+# ============================================================
+# USER ADDRESSES
+# ============================================================
+class UserAddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserAddress
+        fields = [
+            'id', 'receiver_name', 'receiver_phone',
+            'line1', 'ward', 'district', 'city',
+            'postal_code', 'is_default', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at']
+
+    def validate_receiver_phone(self, value):
+        if not re.match(r'^\+?[0-9]{9,15}$', value):
+            raise serializers.ValidationError("Số điện thoại không hợp lệ.")
+        return value
+
+
+# ============================================================
+# WISHLIST
+# ============================================================
+class WishlistItemSerializer(serializers.ModelSerializer):
+    product_id   = serializers.IntegerField(source='product.id', read_only=True)
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    price        = serializers.DecimalField(source='product.price',
+                                            max_digits=12, decimal_places=2, read_only=True)
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = WishlistItem
+        fields = ['id', 'product_id', 'product_name', 'price', 'image', 'added_at']
+        read_only_fields = fields
+
+    def get_image(self, obj):
+        image = obj.product.images.order_by('sort_order').first()
+        if not image:
+            return ''
+        request = self.context.get('request')
+        url = image.image_url.url
+        return request.build_absolute_uri(url) if request else url
+
+
+class WishlistSerializer(serializers.ModelSerializer):
+    items = WishlistItemSerializer(many=True, read_only=True)
+    total_items = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Wishlist
+        fields = ['id', 'total_items', 'items']
+
+    def get_total_items(self, obj):
+        return obj.items.count()
+
+

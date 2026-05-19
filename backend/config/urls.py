@@ -25,10 +25,21 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('login/', TemplateView.as_view(template_name='pages/login/login.html'), name='login_page'),
-    path('products/', TemplateView.as_view(template_name='pages/products/products.html'), name='products_page'),
+    path('admin-login/', TemplateView.as_view(template_name='pages/admin-login/admin-login.html'), name='admin_login_page'),
+    path('admin-home/', TemplateView.as_view(template_name='pages/admin-home/admin-home.html'), name='admin_home_page'),
+    path('admin-customers/', TemplateView.as_view(template_name='pages/admin-customers/admin-customers.html'), name='admin_customers_page'),
+    path('admin-orders/', TemplateView.as_view(template_name='pages/admin-orders/admin-orders.html'), name='admin_orders_page'),
+    path('admin-dashboard/', TemplateView.as_view(template_name='pages/admin-dashboard/admin-dashboard.html'), name='admin_dashboard_page'),
+    path('admin-categories/', TemplateView.as_view(template_name='pages/admin-categories/admin-categories.html'), name='admin_categories_page'),
+    path('admin-reviews/', TemplateView.as_view(template_name='pages/admin-reviews/admin-reviews.html'), name='admin_reviews_page'),
+    path('admin-top-categories/', TemplateView.as_view(template_name='pages/admin-top-categories/admin-top-categories.html'), name='admin_top_categories_page'),
+    path('admin-top-products/', TemplateView.as_view(template_name='pages/admin-top-products/admin-top-products.html'), name='admin_top_products_page'),
+    path('admin-inventory/', TemplateView.as_view(template_name='pages/admin-inventory/admin-inventory.html'), name='admin_inventory_page'),
     path('shop/', TemplateView.as_view(template_name='pages/shop/shop.html'), name='shop_page'),
     path('cart/', TemplateView.as_view(template_name='pages/cart/cart.html'), name='cart_page'),
     path('api/auth/', include('apps.users.urls')),
     path('api/', include('apps.products.urls')),
+    path('api/admin/', include('apps.admin_api.urls')),
+    path('api/', include('apps.orders.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
