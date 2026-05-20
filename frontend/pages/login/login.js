@@ -4,6 +4,7 @@
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
+    updateAuthHeader();
 
     /* ----------------------------------------------------------
        1. TAB SWITCHER – Đăng nhập / Đăng ký
@@ -101,11 +102,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         searchBtn.addEventListener('click', () => {
             const q = searchInput.value.trim();
-            if (q) window.location.href = `/products/?search=${encodeURIComponent(q)}`;
+            if (q) {
+                window.location.href = `/shop/?search=${encodeURIComponent(q)}`;
+            } else {
+                window.location.href = '/shop/';
+            }
         });
     }
 
 });
+
+function updateAuthHeader() {
+    const accountBtn = document.getElementById('accountBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const isLoggedIn = Boolean(localStorage.getItem('access_token'));
+
+    if (accountBtn) {
+        accountBtn.hidden = isLoggedIn;
+    }
+
+    if (logoutBtn) {
+        logoutBtn.hidden = !isLoggedIn;
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            window.location.href = '/login/';
+        });
+    }
+}
 
 const API_BASE = 'http://127.0.0.1:8000/api';
 

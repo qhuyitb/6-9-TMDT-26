@@ -156,27 +156,48 @@
     const SHOP_API_BASE = 'http://127.0.0.1:8000/api';
 
     document.addEventListener('DOMContentLoaded', () => {
+        syncHeaderSearch();
         loadShopProducts();
         loadCartSummary();
     });
 
+    function getSearchQuery() {
+        return new URLSearchParams(window.location.search).get('search')?.trim() || '';
+    }
+
+    function syncHeaderSearch() {
+        const searchInput = document.querySelector('.search-bar input');
+        const searchQuery = getSearchQuery();
+
+        if (searchInput && searchQuery) {
+            searchInput.value = searchQuery;
+        }
+    }
+
     async function loadShopProducts() {
         const grid = document.getElementById('productGrid');
+        const searchQuery = getSearchQuery();
+        const params = new URLSearchParams({ status: 'active' });
+
+        if (searchQuery) {
+            params.set('search', searchQuery);
+        }
 
         try {
-            const res = await fetch(`${SHOP_API_BASE}/products/`);
+            const res = await fetch(`${SHOP_API_BASE}/products/?${params.toString()}`);
             if (!res.ok) throw new Error('Cannot load products');
 
             const data = await res.json();
             const products = data.results || data;
-            const activeProducts = products.filter(product => product.business_status === 'active');
 
-            if (!activeProducts.length) {
-                grid.innerHTML = '<div class="shop-message">Chua co san pham dang ban.</div>';
+            if (!products.length) {
+                grid.innerHTML = searchQuery
+                    ? `<div class="shop-message">Khong tim thay san pham phu hop voi "${escapeHtml(searchQuery)}".</div>`
+                    : '<div class="shop-message">Chua co san pham dang ban.</div>';
                 return;
             }
 
-            renderProducts(activeProducts);
+            renderProducts(products);
         } catch (error) {
             grid.innerHTML = '<div class="shop-message">Khong the tai san pham.</div>';
         }
