@@ -29,7 +29,7 @@ urlpatterns = [
     path('admin-home/', TemplateView.as_view(template_name='pages/admin-home/admin-home.html'), name='admin_home_page'),
     path('admin-customers/', TemplateView.as_view(template_name='pages/admin-customers/admin-customers.html'), name='admin_customers_page'),
     path('admin-orders/', TemplateView.as_view(template_name='pages/admin-orders/admin-orders.html'), name='admin_orders_page'),
-    path('admin-dashboard/', TemplateView.as_view(template_name='pages/admin-dashboard/admin-dashboard.html'), name='admin_dashboard_page'),
+    path('admin-products/', TemplateView.as_view(template_name='pages/admin-products/admin-products.html'), name='admin_dashboard_page'),
     path('admin-categories/', TemplateView.as_view(template_name='pages/admin-categories/admin-categories.html'), name='admin_categories_page'),
     path('admin-reviews/', TemplateView.as_view(template_name='pages/admin-reviews/admin-reviews.html'), name='admin_reviews_page'),
     path('admin-top-categories/', TemplateView.as_view(template_name='pages/admin-top-categories/admin-top-categories.html'), name='admin_top_categories_page'),

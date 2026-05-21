@@ -48,7 +48,7 @@ if (loginForm) {
       localStorage.setItem('user_role', data.user ? data.user.role : '');
 
       if (data.user && data.user.role === 'admin') {
-        window.location.href = '/admin-dashboard/';
+        window.location.href = '/admin-home/';
         return;
       }
 
