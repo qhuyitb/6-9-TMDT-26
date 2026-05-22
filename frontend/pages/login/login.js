@@ -4,6 +4,7 @@
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
+    updateAuthHeader();
 
     /* ----------------------------------------------------------
        1. TAB SWITCHER – Đăng nhập / Đăng ký
@@ -101,11 +102,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         searchBtn.addEventListener('click', () => {
             const q = searchInput.value.trim();
-            if (q) window.location.href = `/products/?search=${encodeURIComponent(q)}`;
+            if (q) window.location.href = `/shop/?search=${encodeURIComponent(q)}`;
         });
     }
 
 });
+
+function updateAuthHeader() {
+    const accountBtn = document.getElementById('accountBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const isLoggedIn = Boolean(localStorage.getItem('access_token'));
+
+    if (accountBtn) {
+        accountBtn.hidden = isLoggedIn;
+    }
+
+    if (logoutBtn) {
+        logoutBtn.hidden = !isLoggedIn;
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            window.location.href = '/login/';
+        });
+    }
+}
 
 const API_BASE = 'http://127.0.0.1:8000/api';
 
@@ -128,8 +148,9 @@ if (loginForm) {
         if (res.ok) {
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('refresh_token', data.refresh_token);
+            localStorage.setItem('user_role', data.user ? data.user.role : '');
             if (data.user && data.user.role === 'admin') {
-                window.location.href = '/products/';
+                window.location.href = '/admin-home/';
             } else {
                 window.location.href = '/shop/';
             }

@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from apps.products.models import Product
 
@@ -47,6 +48,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('inactive', 'Inactive'),
     )
 
+    password = models.CharField(max_length=255, db_column='password_hash')
     full_name = models.CharField(max_length=150)
     email = models.EmailField(max_length=150, unique=True)
     phone = models.CharField(max_length=20, unique=True)
@@ -71,12 +73,30 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class Cart(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='cart')
+    STATUS_ACTIVE = 'active'
+    STATUS_CHECKED_OUT = 'checked_out'
+    STATUS_ABANDONED = 'abandoned'
+
+    STATUS_CHOICES = (
+        (STATUS_ACTIVE, 'Active'),
+        (STATUS_CHECKED_OUT, 'Checked out'),
+        (STATUS_ABANDONED, 'Abandoned'),
+    )
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='cart', null=True, blank=True)
+    session_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'carts'
+        constraints = [
+            models.CheckConstraint(
+                check=Q(user__isnull=False) | Q(session_id__isnull=False),
+                name='cart_user_or_session_required'
+            )
+        ]
 
     def __str__(self):
         return f'Cart - {self.user.email}'
@@ -86,6 +106,7 @@ class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='cart_items')
     quantity = models.PositiveIntegerField(default=1)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -95,3 +116,55 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f'{self.product.name} x {self.quantity}'
+
+
+class UserAddress(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='addresses')
+    receiver_name = models.CharField(max_length=150)
+    receiver_phone = models.CharField(max_length=20)
+    line1 = models.CharField(max_length=255)
+    ward = models.CharField(max_length=100)
+    district = models.CharField(max_length=100)
+    city = models.CharField(max_length=100)
+    postal_code = models.CharField(max_length=20, null=True, blank=True)
+    is_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'user_addresses'
+
+    def __str__(self):
+        return f'{self.user.email} - {self.line1}'
+
+
+class Wishlist(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='wishlists', null=True, blank=True)
+    session_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'wishlists'
+        constraints = [
+            models.CheckConstraint(
+                check=Q(user__isnull=False) | Q(session_id__isnull=False),
+                name='wishlist_user_or_session_required'
+            )
+        ]
+
+    def __str__(self):
+        return f'Wishlist - {self.user.email if self.user else self.session_id}'
+
+
+class WishlistItem(models.Model):
+    wishlist = models.ForeignKey(Wishlist, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='wishlist_items')
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'wishlist_items'
+        unique_together = ('wishlist', 'product')
+
+    def __str__(self):
+        return f'{self.product.name} - wishlist'
+

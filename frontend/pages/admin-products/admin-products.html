@@ -170,17 +170,17 @@
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section-label">Tổng quan</div>
-    <a class="nav-item" href="#"><i class="bi bi-grid-1x2"></i> Trang chủ</a>
+    <a class="nav-item" href="/admin-home/"><i class="bi bi-grid-1x2"></i> Trang chủ</a>
     <div class="nav-section-label">Quản lý</div>
-    <a class="nav-item" href="#"><i class="bi bi-people"></i> Khách hàng</a>
-    <a class="nav-item" href="#"><i class="bi bi-bag"></i> Đơn hàng</a>
-    <a class="nav-item active" href="#"><i class="bi bi-box-seam"></i> Sản phẩm</a>
-    <a class="nav-item" href="#"><i class="bi bi-tags"></i> Loại sản phẩm</a>
-    <a class="nav-item" href="#"><i class="bi bi-star"></i> Đánh giá KH</a>
+    <a class="nav-item" href="/admin-customers/"><i class="bi bi-people"></i> Khách hàng</a>
+    <a class="nav-item" href="/admin-orders/"><i class="bi bi-bag"></i> Đơn hàng</a>
+    <a class="nav-item active" href="/admin-products/"><i class="bi bi-box-seam"></i> Sản phẩm</a>
+    <a class="nav-item" href="/admin-categories/"><i class="bi bi-tags"></i> Loại sản phẩm</a>
+    <a class="nav-item" href="/admin-reviews/"><i class="bi bi-star"></i> Đánh giá KH</a>
     <div class="nav-section-label">Thống kê</div>
-    <a class="nav-item" href="#"><i class="bi bi-fire"></i> Danh mục bán chạy</a>
-    <a class="nav-item" href="#"><i class="bi bi-trophy"></i> Sản phẩm bán chạy</a>
-    <a class="nav-item" href="#"><i class="bi bi-archive"></i> Hàng tồn kho</a>
+    <a class="nav-item" href="/admin-top-categories/"><i class="bi bi-fire"></i> Danh mục bán chạy</a>
+    <a class="nav-item" href="/admin-top-products/"><i class="bi bi-trophy"></i> Sản phẩm bán chạy</a>
+    <a class="nav-item" href="/admin-inventory/"><i class="bi bi-archive"></i> Hàng tồn kho</a>
   </nav>
 </aside>
 
@@ -364,9 +364,21 @@
   let deleteProductId = null;
 
   document.addEventListener('DOMContentLoaded', () => {
+    if (!requireAdmin()) {
+      return;
+    }
     loadCategories();
     loadProducts();
   });
+
+  function requireAdmin() {
+    const role = localStorage.getItem('user_role');
+    if (!accessToken || role !== 'admin') {
+      window.location.href = '/admin-login/';
+      return false;
+    }
+    return true;
+  }
 
   function authHeaders() {
     return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` };
@@ -530,7 +542,30 @@
       showToast('Bạn chưa đăng nhập! Lưu token trước.', 'error'); return;
     }
 
-    const body = { name, sku, category: parseInt(category), brand, price: parseFloat(price), stock_quantity: parseInt(stock), business_status: status, description, specifications: specs };
+    const priceValue = Number(price);
+    const stockValue = stock === '' ? 0 : Number(stock);
+
+    if (!Number.isFinite(priceValue)) {
+      showToast('Giá bán không hợp lệ!', 'error');
+      return;
+    }
+
+    if (!Number.isFinite(stockValue) || stockValue < 0) {
+      showToast('Tồn kho không hợp lệ!', 'error');
+      return;
+    }
+
+    const body = {
+      name,
+      sku,
+      category: parseInt(category, 10),
+      brand,
+      price: priceValue,
+      stock_quantity: Math.trunc(stockValue),
+      business_status: status,
+      description,
+      specifications: specs
+    };
 
     try {
       const url = id ? `${API_BASE}/products/${id}/` : `${API_BASE}/products/`;
@@ -577,7 +612,9 @@
   function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
   function formatPrice(price) {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+    const value = Number(price);
+    if (!Number.isFinite(value)) return '0 ₫';
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
   }
 
   function previewFiles(input) {

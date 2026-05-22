@@ -1,0 +1,212 @@
+{% extends 'pages/login/base.html' %}
+{% load static %}
+
+{% block title %}Đơn hàng - TechShop{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'login.css' %}">
+<style>
+    .orders-shell { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+    .orders-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+    .orders-title { font-size: 1.55rem; font-weight: 800; color: var(--text-dark); }
+    .orders-list { display: grid; gap: 16px; }
+    .order-card, .empty-orders { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+    .order-card.highlight { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(229, 57, 53, .12); }
+    .order-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 16px; border-bottom: 1px solid var(--border); }
+    .order-code { font-weight: 800; color: var(--text-dark); }
+    .order-date { margin-top: 4px; color: var(--text-light); font-size: .9rem; }
+    .order-status { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 10px; background: #eef0f5; color: var(--text-mid); font-size: .85rem; font-weight: 800; white-space: nowrap; }
+    .order-body { padding: 16px; display: grid; gap: 14px; }
+    .order-item { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+    .order-thumb { width: 64px; aspect-ratio: 1; border-radius: var(--radius); background: #eef0f5; display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--text-light); font-size: .75rem; }
+    .order-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .order-name { font-weight: 700; color: var(--text-dark); }
+    .order-meta { margin-top: 3px; color: var(--text-light); font-size: .9rem; }
+    .order-line-total { font-weight: 800; color: var(--text-dark); text-align: right; }
+    .order-info { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 12px; border-top: 1px solid var(--border); color: var(--text-mid); }
+    .order-info strong { color: var(--text-dark); }
+    .order-address { grid-column: 1 / -1; }
+    .order-total { display: flex; justify-content: flex-end; gap: 12px; align-items: baseline; padding-top: 12px; border-top: 1px solid var(--border); font-size: 1.05rem; }
+    .order-total strong { color: var(--primary); font-size: 1.2rem; }
+    .empty-orders { padding: 34px 24px; text-align: center; color: var(--text-mid); }
+    .continue-btn { border: 1px solid var(--border); background: var(--white); color: var(--text-dark); border-radius: var(--radius); padding: 12px 14px; text-align: center; font-weight: 800; display: inline-block; margin-top: 14px; }
+    @media (max-width: 720px) {
+        .order-top, .order-info { grid-template-columns: 1fr; }
+        .order-top { display: grid; }
+        .order-item { grid-template-columns: 56px minmax(0, 1fr); }
+        .order-line-total { grid-column: 2; text-align: left; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="orders-shell">
+    <div class="orders-header">
+        <h1 class="orders-title">Đơn hàng của tôi</h1>
+    </div>
+    <div id="ordersContent" class="orders-list">
+        <div class="empty-orders">Đang tải đơn hàng...</div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const ORDERS_API_BASE = 'http://127.0.0.1:8000/api';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadOrders();
+    });
+
+    async function loadOrders() {
+        const token = getAccessToken();
+        if (!token) {
+            renderLoginRequired();
+            return;
+        }
+
+        try {
+            const res = await fetch(`${ORDERS_API_BASE}/orders/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.status === 401) {
+                renderLoginRequired();
+                return;
+            }
+            if (!res.ok) throw new Error('Cannot load orders');
+
+            const orders = await res.json();
+            renderOrders(orders);
+        } catch (error) {
+            document.getElementById('ordersContent').innerHTML =
+                '<div class="empty-orders">Không thể tải đơn hàng.</div>';
+        }
+    }
+
+    function renderOrders(orders) {
+        const container = document.getElementById('ordersContent');
+        const createdId = new URLSearchParams(window.location.search).get('created');
+
+        if (!orders.length) {
+            container.innerHTML = `
+                <div class="empty-orders">
+                    <p>Bạn chưa có đơn hàng nào.</p>
+                    <a class="continue-btn" href="/shop/">Tiếp tục mua hàng</a>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = orders.map(order => renderOrder(order, String(order.id) === createdId)).join('');
+    }
+
+    function renderOrder(order, highlighted) {
+        const items = order.items || [];
+        const address = order.address ? [
+            order.address.line1,
+            order.address.ward,
+            order.address.district,
+            order.address.city
+        ].filter(Boolean).join(', ') : 'Chưa có địa chỉ';
+
+        return `
+            <article class="order-card ${highlighted ? 'highlight' : ''}">
+                <div class="order-top">
+                    <div>
+                        <div class="order-code">${escapeHtml(order.order_code || ('#' + order.id))}</div>
+                        <div class="order-date">${formatDate(order.order_date)}</div>
+                    </div>
+                    <span class="order-status">${statusLabel(order.status)} - ${paymentLabel(order.payment_status)}</span>
+                </div>
+                <div class="order-body">
+                    ${items.map(renderOrderItem).join('')}
+                    <div class="order-info">
+                        <div>Người nhận: <strong>${escapeHtml(order.address?.receiver_name || '')}</strong></div>
+                        <div>Điện thoại: <strong>${escapeHtml(order.address?.receiver_phone || '')}</strong></div>
+                        <div class="order-address">Địa chỉ: <strong>${escapeHtml(address)}</strong></div>
+                    </div>
+                    <div class="order-total">
+                        <span>Tổng cộng</span>
+                        <strong>${formatPrice(order.total_amount || 0)}</strong>
+                    </div>
+                </div>
+            </article>
+        `;
+    }
+
+    function renderOrderItem(item) {
+        const image = item.image
+            ? `<img src="${item.image}" alt="${escapeHtml(item.product_name)}">`
+            : '<span>Image</span>';
+
+        return `
+            <div class="order-item">
+                <div class="order-thumb">${image}</div>
+                <div>
+                    <div class="order-name">${escapeHtml(item.product_name)}</div>
+                    <div class="order-meta">${formatPrice(item.unit_price)} x ${item.quantity}</div>
+                </div>
+                <div class="order-line-total">${formatPrice(item.line_total)}</div>
+            </div>
+        `;
+    }
+
+    function renderLoginRequired() {
+        document.getElementById('ordersContent').innerHTML = `
+            <div class="empty-orders">
+                <p>Bạn cần đăng nhập để xem đơn hàng.</p>
+                <a class="continue-btn" href="/login/">Đăng nhập</a>
+            </div>
+        `;
+    }
+
+    function getAccessToken() {
+        return localStorage.getItem('access_token') || '';
+    }
+
+    function formatPrice(price) {
+        const value = Number(price);
+        if (!Number.isFinite(value)) return '0 ₫';
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(value);
+    }
+
+    function formatDate(value) {
+        if (!value) return '';
+        return new Date(value).toLocaleString('vi-VN');
+    }
+
+    function statusLabel(status) {
+        return {
+            pending: 'Chờ xác nhận',
+            confirmed: 'Đã xác nhận',
+            preparing: 'Đang chuẩn bị',
+            shipping: 'Đang giao',
+            completed: 'Hoàn thành',
+            cancelled: 'Đã hủy'
+        }[status] || status;
+    }
+
+    function paymentLabel(status) {
+        return {
+            unpaid: 'Chưa thanh toán',
+            pending: 'Chờ thanh toán',
+            paid: 'Đã thanh toán',
+            failed: 'Thanh toán lỗi',
+            refunded: 'Đã hoàn tiền'
+        }[status] || status;
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đánh giá KH – TechShop Admin</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sidebar-w: 230px;
+    --primary: #1a56db;
+    --primary-light: #e8f0fd;
+    --accent: #f59e0b;
+    --bg: #f1f5f9;
+    --sidebar-bg: #0f172a;
+    --sidebar-text: #94a3b8;
+    --text-main: #1e293b;
+    --text-sub: #64748b;
+    --border: #e2e8f0;
+    --white: #ffffff;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --star-color: #f59e0b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', sans-serif; background: var(--bg); color: var(--text-main); display: flex; min-height: 100vh; }
+
+  .sidebar { width: var(--sidebar-w); background: var(--sidebar-bg); min-height: 100vh; position: fixed; top: 0; left: 0; display: flex; flex-direction: column; z-index: 100; }
+  .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; gap: 10px; }
+  .sidebar-logo .logo-icon { width: 36px; height: 36px; background: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; flex-shrink: 0; }
+  .sidebar-logo span { color: white; font-weight: 700; font-size: 15px; line-height: 1.2; }
+  .sidebar-logo small { color: var(--sidebar-text); font-size: 11px; display: block; font-weight: 400; }
+  .sidebar-nav { padding: 12px 0; flex: 1; overflow-y: auto; }
+  .nav-section-label { color: #475569; font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; padding: 10px 20px 4px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; color: var(--sidebar-text); text-decoration: none; font-size: 13.5px; font-weight: 500; transition: all 0.15s; cursor: pointer; border: none; background: none; width: 100%; }
+  .nav-item:hover { color: white; background: #1e293b; }
+  .nav-item.active { color: white; background: var(--primary); position: relative; }
+  .nav-item.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); border-radius: 0 2px 2px 0; }
+  .nav-item i { font-size: 16px; width: 20px; text-align: center; }
+
+  .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+  .topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .topbar-left { display: flex; align-items: center; gap: 8px; color: var(--text-sub); font-size: 13.5px; }
+  .topbar-left strong { color: var(--text-main); font-size: 15px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .topbar-icon-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border); background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-sub); font-size: 16px; position: relative; transition: all 0.15s; }
+  .topbar-icon-btn:hover { background: var(--bg); }
+  .badge-dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; background: #ef4444; border-radius: 50%; border: 1.5px solid white; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: white; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+  .page-content { padding: 24px 28px; flex: 1; }
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .page-header-left h1 { font-size: 20px; font-weight: 700; }
+  .page-header-left p { font-size: 13px; color: var(--text-sub); margin-top: 2px; }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13.5px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-outline { background: white; color: var(--text-main); border: 1px solid var(--border); }
+  .btn-outline:hover { background: var(--bg); }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: #1648c0; }
+  .btn-danger { background: #dc2626; color: white; }
+  .btn-danger:hover { background: #b91c1c; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 20px; }
+  .stat-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+  .stat-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .stat-card-label { font-size: 12px; color: var(--text-sub); font-weight: 500; }
+  .stat-card-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+  .stat-card-val { font-size: 21px; font-weight: 700; }
+  .stat-card-footer { font-size: 12px; color: var(--text-sub); margin-top: 3px; }
+  .icon-amber { background: #fef3c7; color: #d97706; }
+  .icon-green { background: #dcfce7; color: #16a34a; }
+  .icon-red   { background: #fee2e2; color: #dc2626; }
+  .icon-blue  { background: #dbeafe; color: #1d4ed8; }
+  .icon-gray  { background: #f1f5f9; color: #64748b; }
+
+  /* OVERVIEW */
+  .overview-row { display: grid; grid-template-columns: 200px 1fr; gap: 20px; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 20px; align-items: center; }
+  .overview-score { text-align: center; }
+  .overview-score .big-score { font-size: 52px; font-weight: 700; line-height: 1; }
+  .overview-score .stars-row { display: flex; justify-content: center; gap: 3px; margin: 6px 0 4px; font-size: 20px; color: var(--star-color); }
+  .overview-score .total-count { font-size: 13px; color: var(--text-sub); }
+  .bars-list { display: flex; flex-direction: column; gap: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .bar-label { width: 20px; text-align: right; font-weight: 600; color: var(--text-sub); flex-shrink: 0; }
+  .bar-track { flex: 1; height: 8px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--star-color); border-radius: 99px; transition: width 0.5s ease; }
+  .bar-count { width: 40px; text-align: right; color: var(--text-sub); font-size: 12.5px; flex-shrink: 0; }
+
+  /* STAR TABS */
+  .star-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .star-tab { padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border); background: white; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; color: var(--text-main); display: flex; align-items: center; gap: 5px; }
+  .star-tab:hover { border-color: var(--star-color); color: #92400e; background: #fef3c7; }
+  .star-tab.active { background: var(--star-color); color: white; border-color: var(--star-color); }
+  .star-tab.active i { color: white; }
+  .tab-count { font-size: 11px; opacity: 0.75; }
+
+  /* FILTERS */
+  .filters-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .search-box { position: relative; flex: 1; min-width: 220px; }
+  .search-box i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-sub); font-size: 15px; pointer-events: none; }
+  .search-box input { width: 100%; padding: 8px 12px 8px 34px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13.5px; font-family: inherit; background: var(--white); color: var(--text-main); outline: none; transition: border 0.15s; }
+  .search-box input:focus { border-color: var(--primary); }
+  .filters-bar select { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13.5px; font-family: inherit; background: var(--white); color: var(--text-main); cursor: pointer; outline: none; }
+
+  /* TABLE */
+  .table-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 820px; }
+  thead th { padding: 11px 14px; text-align: left; font-size: 11.5px; font-weight: 600; color: var(--text-sub); border-bottom: 1px solid var(--border); background: #f8fafc; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #f8fafc; }
+  td { padding: 11px 14px; vertical-align: middle; }
+
+  .customer-cell { display: flex; align-items: center; gap: 9px; }
+  .customer-ava { width: 30px; height: 30px; border-radius: 50%; background: var(--primary-light); color: var(--primary); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .customer-name { font-weight: 500; font-size: 13px; white-space: nowrap; }
+  .customer-email { font-size: 11.5px; color: var(--text-sub); white-space: nowrap; }
+
+  .product-name { font-size: 13px; font-weight: 500; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stars-inline { display: flex; gap: 1px; font-size: 13px; color: var(--star-color); }
+  .stars-inline .empty { color: #e2e8f0; }
+  .review-comment { max-width: 220px; font-size: 13px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .review-comment:hover { color: var(--primary); }
+
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .badge-visible  { background: #dcfce7; color: #166534; }
+  .badge-hidden   { background: #fee2e2; color: #991b1b; }
+  .badge-reported { background: #fef3c7; color: #92400e; }
+
+  .row-actions { display: flex; gap: 6px; }
+  .icon-btn { width: 30px; height: 30px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: white; color: var(--text-sub); font-size: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
+  .icon-btn:hover { background: var(--bg); color: var(--text-main); }
+  .icon-btn.danger:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+  .icon-btn.warn:hover { background: #fef3c7; color: #d97706; border-color: #fcd34d; }
+
+  /* PAGINATION */
+  .table-footer { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+  .table-info { font-size: 13px; color: var(--text-sub); }
+  .pagination { display: flex; gap: 4px; }
+  .pag-btn { min-width: 32px; height: 32px; padding: 0 6px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: var(--radius-sm); background: white; color: var(--text-main); font-size: 13px; font-family: inherit; cursor: pointer; transition: all 0.15s; }
+  .pag-btn:hover:not(:disabled) { background: var(--bg); }
+  .pag-btn.active { background: var(--primary); color: white; border-color: var(--primary); font-weight: 700; }
+  .pag-btn:disabled { color: #c5d0e0; cursor: not-allowed; }
+
+  /* LOADING / EMPTY */
+  .loading-row td, .empty-row td { text-align: center; padding: 48px; color: var(--text-sub); font-size: 14px; }
+  .spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 10px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ERROR BANNER */
+  .error-banner { background: #fee2e2; border: 1px solid #fca5a5; border-radius: var(--radius-sm); padding: 12px 16px; font-size: 13.5px; color: #991b1b; margin-bottom: 16px; display: none; align-items: center; gap: 8px; }
+  .error-banner.show { display: flex; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal { background: white; border-radius: 14px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.18); transform: translateY(16px); transition: transform 0.2s; }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--border); }
+  .modal-header h2 { font-size: 16px; font-weight: 700; }
+  .modal-close { width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border); background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 17px; color: var(--text-sub); transition: all 0.15s; }
+  .modal-close:hover { background: var(--bg); }
+  .modal-body { padding: 22px; }
+  .modal-footer { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+
+  .review-detail-stars { display: flex; gap: 4px; font-size: 22px; color: var(--star-color); margin: 8px 0 12px; }
+  .review-detail-comment { background: #f8fafc; border-left: 3px solid #cbd5e1; border-radius: 0 8px 8px 0; padding: 14px 16px; font-size: 14px; line-height: 1.7; color: var(--text-main); margin-bottom: 16px; }
+  .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-row label { color: var(--text-sub); }
+  .detail-row span { font-weight: 500; }
+
+  /* TOAST */
+  .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 500; display: flex; flex-direction: column; gap: 10px; }
+  .toast { display: flex; align-items: center; gap: 10px; background: #1e293b; color: white; padding: 12px 16px; border-radius: 10px; font-size: 13.5px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.2); animation: slideUp 0.25s ease; min-width: 260px; }
+  .toast.success { background: #166534; }
+  .toast.error { background: #991b1b; }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  @media (max-width: 1100px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 800px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .overview-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon"><i class="bi bi-cpu"></i></div>
+    <div><span>TechShop</span><small>Admin Panel</small></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Tổng quan</div>
+    <a class="nav-item" href="/admin-home/"><i class="bi bi-grid-1x2"></i> Trang chủ</a>
+    <div class="nav-section-label">Quản lý</div>
+    <a class="nav-item" href="/admin-customers/"><i class="bi bi-people"></i> Khách hàng</a>
+    <a class="nav-item" href="/admin-orders/"><i class="bi bi-bag"></i> Đơn hàng</a>
+    <a class="nav-item" href="/admin-products/"><i class="bi bi-box-seam"></i> Sản phẩm</a>
+    <a class="nav-item" href="/admin-categories/"><i class="bi bi-tags"></i> Loại sản phẩm</a>
+    <a class="nav-item active" href="/admin-reviews/"><i class="bi bi-star"></i> Đánh giá KH</a>
+    <div class="nav-section-label">Thống kê</div>
+    <a class="nav-item" href="/admin-top-categories/"><i class="bi bi-fire"></i> Danh mục bán chạy</a>
+    <a class="nav-item" href="/admin-top-products/"><i class="bi bi-trophy"></i> Sản phẩm bán chạy</a>
+    <a class="nav-item" href="/admin-inventory/"><i class="bi bi-archive"></i> Hàng tồn kho</a>
+  </nav>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span>Quản lý</span>
+      <i class="bi bi-chevron-right" style="font-size:11px"></i>
+      <strong>Đánh giá khách hàng</strong>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-icon-btn"><i class="bi bi-bell"></i><span class="badge-dot"></span></div>
+      <div class="avatar">AD</div>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="page-header">
+      <div class="page-header-left">
+        <h1>Đánh giá khách hàng</h1>
+        <p>Quản lý và kiểm duyệt toàn bộ đánh giá sản phẩm</p>
+      </div>
+      <button class="btn btn-outline" onclick="exportCSV()"><i class="bi bi-download"></i> Xuất CSV</button>
+    </div>
+
+    <!-- Error banner -->
+    <div class="error-banner" id="errorBanner">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <span id="errorMsg">Không thể tải dữ liệu từ API.</span>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card-top"><span class="stat-card-label">Tổng đánh giá</span><div class="stat-card-icon icon-blue"><i class="bi bi-chat-square-text"></i></div></div>
+        <div class="stat-card-val" id="stat-total">–</div>
+        <div class="stat-card-footer">Toàn thời gian</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top"><span class="stat-card-label">Điểm trung bình</span><div class="stat-card-icon icon-amber"><i class="bi bi-star-fill"></i></div></div>
+        <div class="stat-card-val" id="stat-avg">–</div>
+        <div class="stat-card-footer">/ 5 sao</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top"><span class="stat-card-label">5 sao</span><div class="stat-card-icon icon-green"><i class="bi bi-emoji-smile"></i></div></div>
+        <div class="stat-card-val" id="stat-5">–</div>
+        <div class="stat-card-footer" id="stat-5-pct">–</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top"><span class="stat-card-label">Bị báo cáo</span><div class="stat-card-icon icon-red"><i class="bi bi-flag"></i></div></div>
+        <div class="stat-card-val" id="stat-reported">–</div>
+        <div class="stat-card-footer">Cần kiểm duyệt</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top"><span class="stat-card-label">Đã ẩn</span><div class="stat-card-icon icon-gray"><i class="bi bi-eye-slash"></i></div></div>
+        <div class="stat-card-val" id="stat-hidden">–</div>
+        <div class="stat-card-footer">Không hiển thị</div>
+      </div>
+    </div>
+
+    <!-- Rating overview -->
+    <div class="overview-row">
+      <div class="overview-score">
+        <div class="big-score" id="overviewScore">–</div>
+        <div class="stars-row" id="overviewStars"></div>
+        <div class="total-count" id="overviewCount">Đang tải...</div>
+      </div>
+      <div class="bars-list" id="overviewBars">
+        <div class="spinner" style="margin:0"></div>
+      </div>
+    </div>
+
+    <!-- Star filter tabs -->
+    <div class="star-tabs">
+      <button class="star-tab active" data-star="" onclick="setStarTab(this,'')">
+        <i class="bi bi-star-fill" style="color:var(--star-color)"></i> Tất cả <span class="tab-count" id="tc-all"></span>
+      </button>
+      <button class="star-tab" data-star="5" onclick="setStarTab(this,'5')">
+        <i class="bi bi-star-fill" style="color:var(--star-color)"></i> 5 sao <span class="tab-count" id="tc-5"></span>
+      </button>
+      <button class="star-tab" data-star="4" onclick="setStarTab(this,'4')">
+        <i class="bi bi-star-fill" style="color:var(--star-color)"></i> 4 sao <span class="tab-count" id="tc-4"></span>
+      </button>
+      <button class="star-tab" data-star="3" onclick="setStarTab(this,'3')">
+        <i class="bi bi-star-fill" style="color:var(--star-color)"></i> 3 sao <span class="tab-count" id="tc-3"></span>
+      </button>
+      <button class="star-tab" data-star="2" onclick="setStarTab(this,'2')">
+        <i class="bi bi-star-fill" style="color:var(--star-color)"></i> 2 sao <span class="tab-count" id="tc-2"></span>
+      </button>
+      <button class="star-tab" data-star="1" onclick="setStarTab(this,'1')">
+        <i class="bi bi-star-fill" style="color:var(--star-color)"></i> 1 sao <span class="tab-count" id="tc-1"></span>
+      </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" id="searchInput" placeholder="Tìm tên KH, sản phẩm, nội dung đánh giá..." oninput="onSearch()">
+      </div>
+      <select id="statusFilter" onchange="applyFilter()">
+        <option value="">Tất cả trạng thái</option>
+        <option value="visible">Hiển thị</option>
+        <option value="hidden">Đã ẩn</option>
+        <option value="reported">Bị báo cáo</option>
+      </select>
+      <select id="sortSel" onchange="applyFilter()">
+        <option value="newest">Mới nhất</option>
+        <option value="oldest">Cũ nhất</option>
+        <option value="highest">Sao cao nhất</option>
+        <option value="lowest">Sao thấp nhất</option>
+      </select>
+      <select id="perPageSel" onchange="applyFilter()">
+        <option value="10">10 / trang</option>
+        <option value="20">20 / trang</option>
+        <option value="50">50 / trang</option>
+      </select>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Khách hàng</th>
+              <th>Sản phẩm</th>
+              <th>Đánh giá</th>
+              <th>Nội dung</th>
+              <th>Ngày đăng</th>
+              <th>Trạng thái</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="reviewBody">
+            <tr class="loading-row"><td colspan="7"><div class="spinner"></div>Đang tải dữ liệu...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <div class="table-info" id="tableInfo"></div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Chi tiết đánh giá</h2>
+      <button class="modal-close" onclick="closeModal()"><i class="bi bi-x"></i></button>
+    </div>
+    <div class="modal-body" id="modalBody"><div class="spinner" style="margin:32px auto"></div></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ===== AUTH =====
+(function() {
+  const role = localStorage.getItem('user_role');
+  const token = localStorage.getItem('access_token');
+  if (!token || role !== 'admin') window.location.href = '/admin-login/';
+})();
+
+// ===== STATE =====
+let allReviews = [];
+let filteredReviews = [];
+let currentPage = 1;
+let perPage = 10;
+let starFilter = '';
+let searchTimer = null;
+let currentReview = null;
+
+const API = '/api/admin/reviews/';
+
+// ===== AUTH HEADER =====
+function authHeaders() {
+  return {
+    'Authorization': 'Bearer ' + localStorage.getItem('access_token'),
+    'Content-Type': 'application/json'
+  };
+}
+
+// ===== HELPERS =====
+function fmtDate(s) {
+  if (!s) return '–';
+  return new Date(s).toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric' });
+}
+function initials(name) {
+  if (!name) return '?';
+  return name.trim().split(' ').map(w => w[0]).slice(-2).join('').toUpperCase();
+}
+function starsHtml(rating, size) {
+  size = size || 13;
+  let h = `<span class="stars-inline" style="font-size:${size}px">`;
+  for (let i = 1; i <= 5; i++)
+    h += `<i class="bi bi-star-fill${i > rating ? ' empty' : ''}"></i>`;
+  return h + '</span>';
+}
+function statusBadge(status) {
+  if (status === 'hidden')   return '<span class="badge badge-hidden"><i class="bi bi-eye-slash"></i> Đã ẩn</span>';
+  if (status === 'reported') return '<span class="badge badge-reported"><i class="bi bi-flag"></i> Bị báo cáo</span>';
+  return '<span class="badge badge-visible"><i class="bi bi-eye"></i> Hiển thị</span>';
+}
+function showError(msg) {
+  const b = document.getElementById('errorBanner');
+  document.getElementById('errorMsg').textContent = msg;
+  b.classList.add('show');
+}
+function hideError() { document.getElementById('errorBanner').classList.remove('show'); }
+
+// ===== FETCH ALL REVIEWS =====
+async function fetchReviews() {
+  document.getElementById('reviewBody').innerHTML =
+    '<tr class="loading-row"><td colspan="7"><div class="spinner"></div>Đang tải dữ liệu...</td></tr>';
+  hideError();
+  try {
+    const res = await fetch(API, { headers: authHeaders() });
+    if (res.status === 401) { window.location.href = '/admin-login/'; return; }
+    if (!res.ok) throw new Error(`Lỗi server: HTTP ${res.status}`);
+    const data = await res.json();
+    // Support both array and paginated {results:[...]} response
+    allReviews = Array.isArray(data) ? data : (data.results || data.reviews || data.data || []);
+    renderStats();
+    renderOverview();
+    renderTabCounts();
+    applyFilter();
+  } catch (err) {
+    showError(err.message || 'Không thể kết nối tới API.');
+    document.getElementById('reviewBody').innerHTML =
+      '<tr class="empty-row"><td colspan="7"><i class="bi bi-wifi-off" style="font-size:28px;display:block;margin-bottom:8px;opacity:0.4"></i>Không tải được dữ liệu. Kiểm tra lại API hoặc kết nối mạng.</td></tr>';
+  }
+}
+
+// ===== STATS =====
+function renderStats() {
+  const total = allReviews.length;
+  const avg = total ? (allReviews.reduce((s,r) => s + (r.rating||0), 0) / total).toFixed(1) : '–';
+  const five = allReviews.filter(r => r.rating === 5).length;
+  const reported = allReviews.filter(r => r.status === 'reported').length;
+  const hidden = allReviews.filter(r => r.status === 'hidden').length;
+
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-avg').textContent = avg;
+  document.getElementById('stat-5').textContent = five;
+  document.getElementById('stat-5-pct').textContent = total ? Math.round(five/total*100) + '% tổng đánh giá' : '';
+  document.getElementById('stat-reported').textContent = reported;
+  document.getElementById('stat-hidden').textContent = hidden;
+}
+
+function renderOverview() {
+  const total = allReviews.length;
+  const avg = total ? allReviews.reduce((s,r) => s + (r.rating||0), 0) / total : 0;
+  document.getElementById('overviewScore').textContent = avg.toFixed(1);
+  document.getElementById('overviewCount').textContent = total + ' lượt đánh giá';
+
+  const fl = Math.floor(avg);
+  const half = avg - fl >= 0.5;
+  let sh = '';
+  for (let i=1;i<=5;i++) {
+    if (i<=fl) sh += '<i class="bi bi-star-fill"></i>';
+    else if (i===fl+1 && half) sh += '<i class="bi bi-star-half"></i>';
+    else sh += '<i class="bi bi-star" style="color:#e2e8f0"></i>';
+  }
+  document.getElementById('overviewStars').innerHTML = sh;
+
+  const counts = {5:0,4:0,3:0,2:0,1:0};
+  allReviews.forEach(r => { if (counts[r.rating] !== undefined) counts[r.rating]++; });
+  let bh = '';
+  for (let s=5;s>=1;s--) {
+    const pct = total ? Math.round(counts[s]/total*100) : 0;
+    bh += `<div class="bar-row">
+      <span class="bar-label">${s}</span>
+      <i class="bi bi-star-fill" style="font-size:11px;color:var(--star-color);flex-shrink:0"></i>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+      <span class="bar-count">${counts[s]}</span>
+    </div>`;
+  }
+  document.getElementById('overviewBars').innerHTML = bh;
+}
+
+function renderTabCounts() {
+  const counts = {5:0,4:0,3:0,2:0,1:0};
+  allReviews.forEach(r => { if (counts[r.rating] !== undefined) counts[r.rating]++; });
+  document.getElementById('tc-all').textContent = '(' + allReviews.length + ')';
+  for (let s=1;s<=5;s++) {
+    const el = document.getElementById('tc-'+s);
+    if (el) el.textContent = '(' + counts[s] + ')';
+  }
+}
+
+// ===== FILTER & SORT =====
+function setStarTab(btn, val) {
+  document.querySelectorAll('.star-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  starFilter = val;
+  applyFilter();
+}
+
+function onSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(applyFilter, 280);
+}
+
+function applyFilter() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  const status = document.getElementById('statusFilter').value;
+  const sort = document.getElementById('sortSel').value;
+  perPage = parseInt(document.getElementById('perPageSel').value);
+
+  filteredReviews = allReviews.filter(r => {
+    const matchQ = !q ||
+      (r.customer_name||'').toLowerCase().includes(q) ||
+      (r.customer_email||'').toLowerCase().includes(q) ||
+      (r.product_name||'').toLowerCase().includes(q) ||
+      (r.comment||'').toLowerCase().includes(q);
+    const matchStar = !starFilter || String(r.rating) === starFilter;
+    const matchStatus = !status || r.status === status;
+    return matchQ && matchStar && matchStatus;
+  });
+
+  filteredReviews.sort((a,b) => {
+    if (sort==='newest') return new Date(b.created_at)-new Date(a.created_at);
+    if (sort==='oldest') return new Date(a.created_at)-new Date(b.created_at);
+    if (sort==='highest') return b.rating - a.rating;
+    if (sort==='lowest') return a.rating - b.rating;
+    return 0;
+  });
+
+  currentPage = 1;
+  renderTable();
+  renderPagination();
+}
+
+// ===== RENDER TABLE =====
+function renderTable() {
+  const start = (currentPage-1)*perPage;
+  const slice = filteredReviews.slice(start, start+perPage);
+  const total = filteredReviews.length;
+
+  document.getElementById('tableInfo').textContent =
+    total === 0 ? 'Không có kết quả'
+    : `Hiển thị ${start+1}–${Math.min(start+perPage,total)} / ${total} đánh giá`;
+
+  if (!slice.length) {
+    document.getElementById('reviewBody').innerHTML =
+      '<tr class="empty-row"><td colspan="7"><i class="bi bi-inbox" style="font-size:28px;display:block;margin-bottom:8px;opacity:0.4"></i>Không tìm thấy đánh giá nào</td></tr>';
+    return;
+  }
+
+  document.getElementById('reviewBody').innerHTML = slice.map(r => {
+    const toggleIcon = r.status==='hidden' ? 'bi-eye' : 'bi-eye-slash';
+    const toggleTitle = r.status==='hidden' ? 'Hiện đánh giá' : 'Ẩn đánh giá';
+    return `<tr>
+      <td>
+        <div class="customer-cell">
+          <div class="customer-ava">${initials(r.customer_name)}</div>
+          <div>
+            <div class="customer-name">${r.customer_name||'–'}</div>
+            <div class="customer-email">${r.customer_email||''}</div>
+          </div>
+        </div>
+      </td>
+      <td><div class="product-name" title="${r.product_name||''}">${r.product_name||'–'}</div></td>
+      <td>${starsHtml(r.rating)}</td>
+      <td>
+        <div class="review-comment" title="${(r.comment||'').replace(/"/g,'&quot;')}" onclick="openModal(${r.id})">
+          ${r.comment || '<em style="color:var(--text-sub)">Không có nội dung</em>'}
+        </div>
+      </td>
+      <td style="color:var(--text-sub);white-space:nowrap">${fmtDate(r.created_at)}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" title="Xem chi tiết" onclick="openModal(${r.id})"><i class="bi bi-eye"></i></button>
+          <button class="icon-btn warn" title="${toggleTitle}" onclick="toggleStatus(${r.id})"><i class="bi ${toggleIcon}"></i></button>
+          <button class="icon-btn danger" title="Xóa đánh giá" onclick="confirmDelete(${r.id})"><i class="bi bi-trash"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ===== PAGINATION =====
+function renderPagination() {
+  const totalPages = Math.ceil(filteredReviews.length/perPage) || 1;
+  const pag = document.getElementById('pagination');
+  let h = `<button class="pag-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}><i class="bi bi-chevron-left"></i></button>`;
+  let s = Math.max(1, currentPage-2);
+  let e = Math.min(totalPages, s+4);
+  if (e-s<4) s = Math.max(1,e-4);
+  if (s>1) h += `<button class="pag-btn" onclick="goPage(1)">1</button>${s>2?'<span style="padding:0 4px;color:var(--text-sub)">…</span>':''}`;
+  for (let i=s;i<=e;i++) h += `<button class="pag-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  if (e<totalPages) h += `${e<totalPages-1?'<span style="padding:0 4px;color:var(--text-sub)">…</span>':''}<button class="pag-btn" onclick="goPage(${totalPages})">${totalPages}</button>`;
+  h += `<button class="pag-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}><i class="bi bi-chevron-right"></i></button>`;
+  pag.innerHTML = h;
+}
+function goPage(p) {
+  const tp = Math.ceil(filteredReviews.length/perPage)||1;
+  if (p<1||p>tp) return;
+  currentPage=p; renderTable(); renderPagination();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ===== MODAL =====
+function openModal(id) {
+  currentReview = allReviews.find(r => r.id===id) || null;
+  if (!currentReview) return;
+  const r = currentReview;
+  document.getElementById('modalBody').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <div class="customer-ava" style="width:38px;height:38px;font-size:13px">${initials(r.customer_name)}</div>
+      <div>
+        <div style="font-weight:600;font-size:14px">${r.customer_name||'–'}</div>
+        <div style="font-size:12px;color:var(--text-sub)">${r.customer_email||''}</div>
+      </div>
+    </div>
+    <div class="review-detail-stars">${starsHtml(r.rating, 22).replace('class="stars-inline"','class="stars-inline" style="font-size:22px"')}</div>
+    <div class="review-detail-comment">${r.comment || '<em style="opacity:0.5">Không có nội dung đánh giá</em>'}</div>
+    <div class="detail-row"><label>Sản phẩm</label><span>${r.product_name||'–'}</span></div>
+    <div class="detail-row"><label>Ngày đăng</label><span>${fmtDate(r.created_at)}</span></div>
+    <div class="detail-row"><label>Trạng thái</label><span>${statusBadge(r.status)}</span></div>
+    ${r.helpful_count!=null?`<div class="detail-row"><label>Lượt hữu ích</label><span>${r.helpful_count}</span></div>`:''}
+  `;
+  const isHidden = r.status==='hidden';
+  document.getElementById('modalFooter').innerHTML = `
+    <button class="btn btn-outline" onclick="closeModal()">Đóng</button>
+    <button class="btn ${isHidden?'btn-primary':'btn-outline'}" onclick="toggleStatus(${r.id});closeModal()">
+      <i class="bi ${isHidden?'bi-eye':'bi-eye-slash'}"></i> ${isHidden?'Hiện đánh giá':'Ẩn đánh giá'}
+    </button>
+    <button class="btn btn-danger" onclick="confirmDelete(${r.id});closeModal()">
+      <i class="bi bi-trash"></i> Xóa
+    </button>
+  `;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); currentReview=null; }
+function closeModalOnOverlay(e) { if (e.target===document.getElementById('modalOverlay')) closeModal(); }
+
+// ===== TOGGLE STATUS =====
+async function toggleStatus(id) {
+  const r = allReviews.find(r => r.id===id);
+  if (!r) return;
+  const newStatus = r.status==='hidden' ? 'visible' : 'hidden';
+  try {
+    const res = await fetch(API + id + '/', {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ status: newStatus })
+    });
+    if (res.status===401) { window.location.href='/admin-login/'; return; }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    r.status = newStatus;
+    renderStats();
+    renderTable();
+    showToast(newStatus==='hidden'?'Đã ẩn đánh giá':'Đã hiện đánh giá lại', 'success');
+  } catch(err) {
+    showToast('Lỗi: ' + err.message, 'error');
+  }
+}
+
+// ===== DELETE =====
+function confirmDelete(id) {
+  const r = allReviews.find(r => r.id===id);
+  if (!r) return;
+  if (!confirm(`Xóa đánh giá của "${r.customer_name||'khách hàng'}"?\nHành động này không thể hoàn tác.`)) return;
+  doDelete(id);
+}
+async function doDelete(id) {
+  try {
+    const res = await fetch(API + id + '/', { method: 'DELETE', headers: authHeaders() });
+    if (res.status===401) { window.location.href='/admin-login/'; return; }
+    if (!res.ok && res.status!==204) throw new Error('HTTP ' + res.status);
+    allReviews = allReviews.filter(r => r.id!==id);
+    renderStats(); renderOverview(); renderTabCounts(); applyFilter();
+    showToast('Đã xóa đánh giá', 'success');
+  } catch(err) {
+    showToast('Lỗi: ' + err.message, 'error');
+  }
+}
+
+// ===== EXPORT CSV =====
+function exportCSV() {
+  if (!filteredReviews.length) { showToast('Không có dữ liệu để xuất'); return; }
+  const headers = ['ID','Khách hàng','Email','Sản phẩm','Đánh giá (sao)','Nội dung','Ngày đăng','Trạng thái'];
+  const rows = filteredReviews.map(r => [
+    r.id, r.customer_name||'', r.customer_email||'',
+    r.product_name||'', r.rating, r.comment||'',
+    fmtDate(r.created_at), r.status
+  ]);
+  const csv = [headers,...rows].map(row =>
+    row.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')
+  ).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='danh-gia-kh.csv'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất file CSV!', 'success');
+}
+
+// ===== TOAST =====
+function showToast(msg, type) {
+  const c = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type||'');
+  const icon = type==='success'?'bi-check-circle':type==='error'?'bi-x-circle':'bi-info-circle';
+  el.innerHTML = `<i class="bi ${icon}"></i> ${msg}`;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ===== INIT =====
+fetchReviews();
+</script>
+</body>
+</html>
