@@ -1,7 +1,7 @@
 {% extends 'pages/login/base.html' %}
 {% load static %}
 
-{% block title %}Gio hang - TechShop{% endblock %}
+{% block title %}Giỏ hàng - TechShop{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'login.css' %}">
@@ -216,11 +216,11 @@
 {% block content %}
 <section class="cart-shell">
     <div class="cart-header">
-        <h1 class="cart-title">Gio hang</h1>
+        <h1 class="cart-title">Giỏ hàng</h1>
     </div>
 
     <div id="cartContent">
-        <div class="empty-cart">Dang tai gio hang...</div>
+        <div class="empty-cart">Đang tải giỏ hàng...</div>
     </div>
 </section>
 {% endblock %}
@@ -259,7 +259,7 @@
             updateHeaderBadge(cart.total_quantity || 0);
         } catch (error) {
             document.getElementById('cartContent').innerHTML =
-                '<div class="empty-cart">Khong the tai gio hang.</div>';
+                '<div class="empty-cart">Không thể tải giỏ hàng.</div>';
         }
     }
 
@@ -270,8 +270,8 @@
         if (!items.length) {
             container.innerHTML = `
                 <div class="empty-cart">
-                    <p>Gio hang dang trong.</p>
-                    <a class="continue-btn" href="/shop/">Tiep tuc mua hang</a>
+                    <p>Giỏ hàng đang trống.</p>
+                    <a class="continue-btn" href="/shop/">Tiếp tục mua hàng</a>
                 </div>
             `;
             return;
@@ -284,19 +284,19 @@
                 </div>
                 <aside class="cart-summary-box">
                     <div class="summary-row">
-                        <span>So luong</span>
-                        <strong>${cart.total_quantity || 0} san pham</strong>
+                        <span>Số lượng</span>
+                        <strong>${cart.total_quantity || 0} sản phẩm</strong>
                     </div>
                     <div class="summary-row">
-                        <span>Tam tinh</span>
+                        <span>Tạm tính</span>
                         <strong>${formatPrice(cart.total_price || 0)}</strong>
                     </div>
                     <div class="summary-row total">
-                        <span>Tong cong</span>
+                        <span>Tổng cộng</span>
                         <strong>${formatPrice(cart.total_price || 0)}</strong>
                     </div>
-                    <button class="checkout-btn" type="button">Thanh toan</button>
-                    <a class="continue-btn" href="/shop/">Tiep tuc mua hang</a>
+                    <button class="checkout-btn" type="button" onclick="checkoutCart(this)">Thanh toán</button>
+                    <a class="continue-btn" href="/shop/">Tiếp tục mua hàng</a>
                 </aside>
             </div>
         `;
@@ -312,7 +312,7 @@
                 <div class="cart-thumb">${image}</div>
                 <div>
                     <div class="cart-name">${escapeHtml(item.product_name)}</div>
-                    <div class="cart-price">${formatPrice(item.price)}</div>
+                    <div class="cart-price">${formatPrice(item.unit_price)}</div>
                 </div>
                 <div class="qty-control">
                     <button type="button" onclick="changeQuantity(${item.id}, ${item.quantity - 1})">-</button>
@@ -341,14 +341,14 @@
             const cart = await res.json();
 
             if (!res.ok) {
-                alert(cart.error || 'Khong the cap nhat gio hang.');
+                alert(cart.error || 'Không thể cập nhật giỏ hàng.');
                 return;
             }
 
             renderCart(cart);
             updateHeaderBadge(cart.total_quantity || 0);
         } catch (error) {
-            alert('Khong the ket noi backend.');
+            alert('Không thể kết nối backend.');
         }
     }
 
@@ -364,22 +364,81 @@
             const cart = await res.json();
 
             if (!res.ok) {
-                alert(cart.error || 'Khong the xoa san pham.');
+                alert(cart.error || 'Không thể xóa sản phẩm.');
                 return;
             }
 
             renderCart(cart);
             updateHeaderBadge(cart.total_quantity || 0);
         } catch (error) {
-            alert('Khong the ket noi backend.');
+            alert('Không thể kết nối backend.');
         }
+    }
+
+    async function checkoutCart(button) {
+        const token = getAccessToken();
+        if (!token) return renderLoginRequired();
+
+        const oldText = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Đang xử lý...';
+
+        try {
+            const address = await getCheckoutAddress(token);
+            const payload = {
+                payment_method: 'cod',
+                shipping_method: 'standard',
+                shipping_fee: 0,
+                note: ''
+            };
+            if (address) {
+                payload.address_id = address.id;
+            }
+
+            const res = await fetch(`${CART_API_BASE}/orders/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                alert(data.error || data.detail || 'Không thể tạo đơn hàng.');
+                return;
+            }
+
+            updateHeaderBadge(0);
+            window.location.href = `/orders/?created=${encodeURIComponent(data.id)}`;
+        } catch (error) {
+            alert('Không thể kết nối backend.');
+        } finally {
+            button.disabled = false;
+            button.textContent = oldText;
+        }
+    }
+
+    async function getCheckoutAddress(token) {
+        const res = await fetch(`${CART_API_BASE}/auth/addresses/`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Cannot load addresses');
+
+        const addresses = await res.json();
+        if (addresses.length) {
+            return addresses.find(item => item.is_default) || addresses[0];
+        }
+
+        return null;
     }
 
     function renderLoginRequired() {
         document.getElementById('cartContent').innerHTML = `
             <div class="empty-cart">
-                <p>Ban can dang nhap de xem gio hang.</p>
-                <a class="continue-btn" href="/login/">Dang nhap</a>
+                <p>Bạn cần đăng nhập để xem giỏ hàng.</p>
+                <a class="continue-btn" href="/login/">Đăng nhập</a>
             </div>
         `;
     }
@@ -396,10 +455,12 @@
     }
 
     function formatPrice(price) {
+        const value = Number(price);
+        if (!Number.isFinite(value)) return '0 ₫';
         return new Intl.NumberFormat('vi-VN', {
             style: 'currency',
             currency: 'VND'
-        }).format(Number(price));
+        }).format(value);
     }
 
     function escapeHtml(value) {

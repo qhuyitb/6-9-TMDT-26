@@ -1,7 +1,7 @@
 {% extends 'pages/login/base.html' %}
 {% load static %}
 
-{% block title %}Cua hang - TechShop{% endblock %}
+{% block title %}Cửa hàng - TechShop{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'login.css' %}">
@@ -138,15 +138,15 @@
 {% block content %}
 <section class="shop-shell">
     <div class="shop-toolbar">
-        <h1 class="shop-title">San pham</h1>
+        <h1 class="shop-title">Sản phẩm</h1>
         <div class="cart-summary">
-            <span>Gio hang:</span>
-            <strong id="cartTotal">0 san pham</strong>
+            <span>Giỏ hàng:</span>
+            <strong id="cartTotal">0 sản phẩm</strong>
         </div>
     </div>
 
     <div id="productGrid" class="product-grid">
-        <div class="shop-message">Dang tai san pham...</div>
+        <div class="shop-message">Đang tải sản phẩm...</div>
     </div>
 </section>
 {% endblock %}
@@ -192,14 +192,14 @@
 
             if (!products.length) {
                 grid.innerHTML = searchQuery
-                    ? `<div class="shop-message">Khong tim thay san pham phu hop voi "${escapeHtml(searchQuery)}".</div>`
-                    : '<div class="shop-message">Chua co san pham dang ban.</div>';
+                    ? `<div class="shop-message">Không tìm thấy sản phẩm phù hợp với "${escapeHtml(searchQuery)}".</div>`
+                    : '<div class="shop-message">Chưa có sản phẩm đang bán.</div>';
                 return;
             }
 
             renderProducts(products);
         } catch (error) {
-            grid.innerHTML = '<div class="shop-message">Khong the tai san pham.</div>';
+            grid.innerHTML = '<div class="shop-message">Không thể tải sản phẩm.</div>';
         }
     }
 
@@ -213,14 +213,14 @@
             ? `<img src="${product.images[0].image_url}" alt="${escapeHtml(product.name)}">`
             : '<span>Image</span>';
         const disabled = product.stock_quantity <= 0 ? 'disabled' : '';
-        const buttonText = product.stock_quantity <= 0 ? 'Het hang' : 'Them vao gio';
+        const buttonText = product.stock_quantity <= 0 ? 'Hết hàng' : 'Thêm vào giỏ';
 
         return `
             <article class="shop-card">
                 <div class="shop-thumb">${image}</div>
                 <div class="shop-card-body">
                     <div class="product-name">${escapeHtml(product.name)}</div>
-                    <div class="product-meta">${escapeHtml(product.brand)} - Con ${product.stock_quantity}</div>
+                    <div class="product-meta">${escapeHtml(product.brand)} - Còn ${product.stock_quantity}</div>
                     <div class="product-price">${formatPrice(product.price)}</div>
                     <button class="add-cart-btn" ${disabled} onclick="addToCart(${product.id})">
                         ${buttonText}
@@ -233,7 +233,7 @@
     async function addToCart(productId) {
         const token = getAccessToken();
         if (!token) {
-            alert('Ban can dang nhap de them san pham vao gio hang.');
+            alert('Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng.');
             window.location.href = '/login/';
             return;
         }
@@ -250,13 +250,13 @@
             const data = await res.json();
 
             if (!res.ok) {
-                alert(data.error || 'Khong the them san pham vao gio hang.');
+                alert(data.error || 'Không thể thêm sản phẩm vào giỏ hàng.');
                 return;
             }
 
             updateCartUi(data.total_quantity || 0);
         } catch (error) {
-            alert('Khong the ket noi backend.');
+            alert('Không thể kết nối backend.');
         }
     }
 
@@ -287,7 +287,7 @@
         const badge = document.querySelector('.header-actions .badge');
 
         if (cartTotal) {
-            cartTotal.textContent = `${totalQuantity} san pham`;
+            cartTotal.textContent = `${totalQuantity} sản phẩm`;
         }
 
         if (badge) {
@@ -300,10 +300,12 @@
     }
 
     function formatPrice(price) {
+        const value = Number(price);
+        if (!Number.isFinite(value)) return '0 ₫';
         return new Intl.NumberFormat('vi-VN', {
             style: 'currency',
             currency: 'VND'
-        }).format(Number(price));
+        }).format(value);
     }
 
     function escapeHtml(value) {
