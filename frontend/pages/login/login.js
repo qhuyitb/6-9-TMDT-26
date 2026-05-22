@@ -130,7 +130,7 @@ if (loginForm) {
             localStorage.setItem('refresh_token', data.refresh_token);
             localStorage.setItem('user_role', data.user ? data.user.role : '');
             if (data.user && data.user.role === 'admin') {
-                window.location.href = '/admin-dashboard/';
+                window.location.href = '/admin-home/';
             } else {
                 window.location.href = '/shop/';
             }
