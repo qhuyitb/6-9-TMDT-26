@@ -1,7 +1,12 @@
+import json
 import uuid
+from urllib.parse import urlencode
+
+from django.conf import settings
+from django.shortcuts import redirect
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from django.db import transaction
 from django.utils import timezone
@@ -9,6 +14,11 @@ from django.utils import timezone
 from apps.admin_api.models import Order, OrderItem, Payment
 from apps.users.models import UserAddress, Cart
 from .serializers import OrderSerializer, OrderCreateSerializer, PaymentSerializer
+from .vnpay import (
+    build_payment_url,
+    is_configured as vnpay_is_configured,
+    validate_response as validate_vnpay_response,
+)
 
 
 class OrderListCreateView(APIView):
@@ -30,6 +40,19 @@ class OrderListCreateView(APIView):
         serializer = OrderCreateSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        payment_method = data['payment_method']
+
+        if payment_method not in (Payment.METHOD_COD, Payment.METHOD_VNPAY):
+            return Response(
+                {'error': 'Phuong thuc thanh toan nay chua duoc ho tro.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if payment_method == Payment.METHOD_VNPAY and not vnpay_is_configured():
+            return Response(
+                {'error': 'VNPay chua duoc cau hinh. Vui long thiet lap VNPAY_TMN_CODE va VNPAY_HASH_SECRET_KEY.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
 
         # Lấy giỏ hàng
         try:
@@ -75,7 +98,7 @@ class OrderListCreateView(APIView):
             subtotal_amount = subtotal,
             shipping_fee    = shipping_fee,
             total_amount    = total_amount,
-            payment_status  = Order.PAYMENT_UNPAID,
+            payment_status  = Order.PAYMENT_PAID if payment_method == Payment.METHOD_COD else Order.PAYMENT_PENDING,
         )
 
         # Tạo OrderItems + trừ tồn kho
@@ -90,12 +113,13 @@ class OrderListCreateView(APIView):
             item.product.save(update_fields=['stock_quantity'])
 
         # Tạo Payment
-        is_cod = data['payment_method'] == Payment.METHOD_COD
-        Payment.objects.create(
+        is_cod = payment_method == Payment.METHOD_COD
+        payment = Payment.objects.create(
             order          = order,
-            payment_method = data['payment_method'],
+            payment_method = payment_method,
             amount         = total_amount,
             status         = Payment.STATUS_SUCCESS if is_cod else Payment.STATUS_PENDING,
+            transaction_ref= order.order_code if payment_method == Payment.METHOD_VNPAY else None,
             paid_at        = timezone.now() if is_cod else None,
         )
 
@@ -111,7 +135,17 @@ class OrderListCreateView(APIView):
         cart.save(update_fields=['status'])
 
         result = OrderSerializer(order, context={'request': request})
-        return Response(result.data, status=status.HTTP_201_CREATED)
+        response_data = result.data
+
+        if payment_method == Payment.METHOD_VNPAY:
+            response_data['payment_url'] = build_payment_url(
+                order=order,
+                request=request,
+                return_url=settings.VNPAY_RETURN_URL,
+            )
+            response_data['payment_id'] = payment.id
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
     def get_checkout_address(self, user, address_id=None):
         if address_id:
@@ -216,3 +250,138 @@ class PaymentDetailView(APIView):
         except Payment.DoesNotExist:
             return Response({'error': 'Không tìm thấy.'}, status=status.HTTP_404_NOT_FOUND)
         return Response(PaymentSerializer(payment).data)
+
+
+class VNPayReturnView(APIView):
+    """
+    GET /api/orders/vnpay/return/
+    VNPay redirects the browser here after payment.
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        result = handle_vnpay_callback(dict(request.GET.items()))
+        return redirect(build_frontend_result_url(result))
+
+
+class VNPayIPNView(APIView):
+    """
+    GET /api/orders/vnpay/ipn/
+    VNPay server-to-server notification endpoint.
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        result = handle_vnpay_callback(dict(request.GET.items()))
+        return Response({
+            'RspCode': result['rsp_code'],
+            'Message': result['message'],
+        })
+
+
+def handle_vnpay_callback(params):
+    if not validate_vnpay_response(params):
+        return {
+            'ok': False,
+            'payment_result': 'failed',
+            'order_id': '',
+            'rsp_code': '97',
+            'message': 'Invalid checksum',
+        }
+
+    txn_ref = params.get('vnp_TxnRef', '')
+    response_code = params.get('vnp_ResponseCode', '')
+    transaction_status = params.get('vnp_TransactionStatus', '')
+    vnp_amount = params.get('vnp_Amount', '0')
+
+    try:
+        with transaction.atomic():
+            payment = Payment.objects.select_for_update().select_related('order').get(
+                transaction_ref=txn_ref,
+                payment_method=Payment.METHOD_VNPAY,
+            )
+            order = payment.order
+
+            if int(vnp_amount) != int(payment.amount * 100):
+                if payment.status == Payment.STATUS_PENDING:
+                    payment.status = Payment.STATUS_RECONCILE_PENDING
+                    payment.gateway_response = json.dumps(params, ensure_ascii=True)
+                    payment.save(update_fields=['status', 'gateway_response'])
+                    order.payment_status = Order.PAYMENT_RECONCILE_PENDING
+                    order.save(update_fields=['payment_status'])
+                return {
+                    'ok': False,
+                    'payment_result': 'failed',
+                    'order_id': order.id,
+                    'rsp_code': '04',
+                    'message': 'Invalid amount',
+                }
+
+            if payment.status == Payment.STATUS_SUCCESS:
+                return {
+                    'ok': True,
+                    'payment_result': 'success',
+                    'order_id': order.id,
+                    'rsp_code': '00',
+                    'message': 'Confirm Success',
+                }
+
+            if response_code == '00' and transaction_status == '00':
+                payment.status = Payment.STATUS_SUCCESS
+                payment.gateway_response = json.dumps(params, ensure_ascii=True)
+                payment.paid_at = timezone.now()
+                payment.save(update_fields=['status', 'gateway_response', 'paid_at'])
+
+                order.payment_status = Order.PAYMENT_PAID
+                order.save(update_fields=['payment_status'])
+
+                return {
+                    'ok': True,
+                    'payment_result': 'success',
+                    'order_id': order.id,
+                    'rsp_code': '00',
+                    'message': 'Confirm Success',
+                }
+
+            payment.status = Payment.STATUS_FAILED
+            payment.gateway_response = json.dumps(params, ensure_ascii=True)
+            payment.save(update_fields=['status', 'gateway_response'])
+
+            order.payment_status = Order.PAYMENT_FAILED
+            order.save(update_fields=['payment_status'])
+
+            return {
+                'ok': False,
+                'payment_result': 'failed',
+                'order_id': order.id,
+                'rsp_code': '00',
+                'message': 'Confirm Success',
+            }
+    except Payment.DoesNotExist:
+        return {
+            'ok': False,
+            'payment_result': 'failed',
+            'order_id': '',
+            'rsp_code': '01',
+            'message': 'Order not found',
+        }
+    except (TypeError, ValueError):
+        return {
+            'ok': False,
+            'payment_result': 'failed',
+            'order_id': '',
+            'rsp_code': '99',
+            'message': 'Unknown error',
+        }
+
+
+def build_frontend_result_url(result):
+    query = urlencode({
+        'created': result.get('order_id') or '',
+        'payment': result.get('payment_result') or 'failed',
+        'code': result.get('rsp_code') or '',
+    })
+    separator = '&' if '?' in settings.VNPAY_FRONTEND_RETURN_URL else '?'
+    return f'{settings.VNPAY_FRONTEND_RETURN_URL}{separator}{query}'
