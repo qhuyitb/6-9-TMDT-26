@@ -17,11 +17,15 @@
     --text-main: #1e293b;
     --text-sub: #64748b;
     --border: #e2e8f0;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Be Vietnam Pro', sans-serif; background: var(--bg); color: var(--text-main); display: flex; min-height: 100vh; }
 
+  /* Sidebar */
   .sidebar { width: var(--sidebar-w); background: var(--sidebar-bg); min-height: 100vh; position: fixed; top: 0; left: 0; display: flex; flex-direction: column; z-index: 100; }
   .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; gap: 10px; }
   .sidebar-logo .logo-icon { width: 36px; height: 36px; background: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; }
@@ -35,6 +39,7 @@
   .nav-item.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); border-radius: 0 2px 2px 0; }
   .nav-item i { font-size: 16px; width: 20px; text-align: center; }
 
+  /* Main */
   .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
   .topbar { background: white; border-bottom: 1px solid var(--border); padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
   .topbar-left { display: flex; align-items: center; gap: 8px; color: var(--text-sub); font-size: 13.5px; }
@@ -46,9 +51,100 @@
   .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: white; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
   .page-content { padding: 28px; flex: 1; }
-  .page-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
-  .page-subtitle { font-size: 13px; color: var(--text-sub); }
-  .info-card { margin-top: 18px; background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; color: var(--text-sub); }
+
+  /* Page header */
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  .page-header-left .page-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .page-header-left .page-subtitle { font-size: 13px; color: var(--text-sub); }
+
+  /* Controls */
+  .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .control-select { height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; background: white; color: var(--text-main); cursor: pointer; outline: none; }
+  .control-select:focus { border-color: var(--primary); }
+  .btn-refresh { height: 36px; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; background: white; font-size: 13px; font-family: inherit; color: var(--text-sub); display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.15s; }
+  .btn-refresh:hover { background: var(--bg); color: var(--text-main); }
+  .btn-refresh.loading i { animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Summary cards */
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .summary-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+  .summary-card .sc-label { font-size: 12px; color: var(--text-sub); font-weight: 500; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .summary-card .sc-value { font-size: 22px; font-weight: 700; color: var(--text-main); }
+  .summary-card .sc-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+
+  /* Main card */
+  .main-card { background: white; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .main-card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .main-card-title { font-size: 14px; font-weight: 600; }
+  .search-box { height: 34px; border: 1px solid var(--border); border-radius: 8px; padding: 0 10px 0 32px; font-size: 13px; font-family: inherit; outline: none; width: 200px; position: relative; background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 10px center; }
+  .search-box:focus { border-color: var(--primary); }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  thead th { padding: 11px 16px; text-align: left; font-size: 11.5px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; background: #f8fafc; border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; }
+  thead th:hover { color: var(--text-main); }
+  thead th .sort-icon { margin-left: 4px; opacity: 0.4; }
+  thead th.sorted .sort-icon { opacity: 1; color: var(--primary); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #f8fafc; }
+  tbody td { padding: 12px 16px; vertical-align: middle; }
+
+  /* Product name cell */
+  .product-cell { display: flex; align-items: center; gap: 10px; }
+  .product-rank { width: 22px; height: 22px; border-radius: 50%; background: var(--bg); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: var(--text-sub); flex-shrink: 0; }
+  .product-rank.top1 { background: #fef3c7; color: #d97706; }
+  .product-rank.top2 { background: #f1f5f9; color: #475569; }
+  .product-rank.top3 { background: #fff7ed; color: #c2410c; }
+  .product-thumb { width: 36px; height: 36px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); object-fit: cover; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .product-info { display: flex; flex-direction: column; }
+  .product-name { font-weight: 600; font-size: 13.5px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+  .product-id { font-size: 11px; color: var(--text-sub); }
+
+  /* Category badge */
+  .cat-badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 20px; font-size: 11.5px; font-weight: 500; background: #eff6ff; color: #1d4ed8; white-space: nowrap; }
+
+  /* Revenue bar */
+  .revenue-cell { display: flex; align-items: center; gap: 8px; }
+  .rev-bar-wrap { flex: 1; min-width: 60px; background: #f1f5f9; border-radius: 4px; height: 6px; overflow: hidden; }
+  .rev-bar { height: 100%; background: var(--primary); border-radius: 4px; transition: width 0.4s ease; }
+  .rev-text { font-weight: 600; font-size: 13px; white-space: nowrap; min-width: 90px; text-align: right; }
+
+  /* Qty */
+  .qty-text { font-weight: 600; }
+
+  /* Trend badge */
+  .trend { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+  .trend.up { background: #ecfdf5; color: #059669; }
+  .trend.down { background: #fef2f2; color: #dc2626; }
+  .trend.flat { background: #f1f5f9; color: #64748b; }
+
+  /* Stock */
+  .stock-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 3px 8px; border-radius: 20px; font-weight: 500; }
+  .stock-badge.ok { background: #ecfdf5; color: #059669; }
+  .stock-badge.low { background: #fff7ed; color: #c2410c; }
+  .stock-badge.out { background: #fef2f2; color: #dc2626; }
+
+  /* Pagination */
+  .pagination { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-sub); flex-wrap: wrap; gap: 8px; }
+  .pagination-btns { display: flex; gap: 6px; }
+  .pg-btn { width: 32px; height: 32px; border-radius: 7px; border: 1px solid var(--border); background: white; font-size: 13px; font-family: inherit; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-sub); transition: all 0.15s; }
+  .pg-btn:hover:not(:disabled) { background: var(--bg); color: var(--text-main); }
+  .pg-btn.active { background: var(--primary); color: white; border-color: var(--primary); font-weight: 600; }
+  .pg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Skeleton loader */
+  .skeleton { background: linear-gradient(90deg, #f1f5f9 25%, #e8edf3 50%, #f1f5f9 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 6px; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  /* Error / empty state */
+  .state-box { padding: 48px 20px; text-align: center; }
+  .state-box i { font-size: 40px; color: var(--text-sub); margin-bottom: 12px; display: block; opacity: 0.5; }
+  .state-box p { color: var(--text-sub); font-size: 14px; }
+  .state-box .btn-retry { margin-top: 14px; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; background: white; font-size: 13px; font-family: inherit; cursor: pointer; color: var(--text-main); }
+  .state-box .btn-retry:hover { background: var(--bg); }
 </style>
 </head>
 <body>
@@ -88,9 +184,67 @@
   </div>
 
   <div class="page-content">
-    <div class="page-title">Sản phẩm bán chạy</div>
-    <div class="page-subtitle">Dữ liệu sẽ lấy từ API /api/admin/top-products/.</div>
-    <div class="info-card">Trang đang chờ giao diện thống kê sản phẩm.</div>
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="page-title">Sản phẩm bán chạy</div>
+        <div class="page-subtitle" id="last-updated">Đang tải dữ liệu...</div>
+      </div>
+      <div class="controls">
+        <select class="control-select" id="period-select">
+          <option value="7">7 ngày qua</option>
+          <option value="30" selected>30 ngày qua</option>
+          <option value="90">90 ngày qua</option>
+          <option value="365">1 năm</option>
+        </select>
+        <select class="control-select" id="limit-select">
+          <option value="10" selected>Top 10</option>
+          <option value="20">Top 20</option>
+          <option value="50">Top 50</option>
+        </select>
+        <button class="btn-refresh" id="btn-refresh" onclick="loadData()">
+          <i class="bi bi-arrow-clockwise"></i> Làm mới
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="summary-grid" id="summary-grid">
+      <div class="summary-card"><div class="sc-label"><i class="bi bi-box-seam"></i> Tổng sản phẩm</div><div class="sc-value skeleton" style="height:28px;width:60px">&nbsp;</div></div>
+      <div class="summary-card"><div class="sc-label"><i class="bi bi-bag-check"></i> Tổng đơn bán</div><div class="sc-value skeleton" style="height:28px;width:80px">&nbsp;</div></div>
+      <div class="summary-card"><div class="sc-label"><i class="bi bi-currency-dollar"></i> Tổng doanh thu</div><div class="sc-value skeleton" style="height:28px;width:110px">&nbsp;</div></div>
+      <div class="summary-card"><div class="sc-label"><i class="bi bi-star-fill" style="color:#f59e0b"></i> Đánh giá TB</div><div class="sc-value skeleton" style="height:28px;width:50px">&nbsp;</div></div>
+    </div>
+
+    <!-- Table -->
+    <div class="main-card">
+      <div class="main-card-header">
+        <div class="main-card-title">Danh sách sản phẩm bán chạy</div>
+        <input class="search-box" id="search-box" type="text" placeholder="Tìm sản phẩm..." oninput="filterTable()" />
+      </div>
+      <div class="table-wrap">
+        <table id="products-table">
+          <thead>
+            <tr>
+              <th onclick="sortBy('rank')">#<span class="sort-icon bi bi-chevron-expand"></span></th>
+              <th>Sản phẩm</th>
+              <th onclick="sortBy('category')">Danh mục <span class="sort-icon bi bi-chevron-expand"></span></th>
+              <th onclick="sortBy('quantity_sold')">Số lượng bán <span class="sort-icon bi bi-chevron-expand"></span></th>
+              <th onclick="sortBy('revenue')">Doanh thu <span class="sort-icon bi bi-chevron-expand"></span></th>
+              <th onclick="sortBy('rating')">Đánh giá <span class="sort-icon bi bi-chevron-expand"></span></th>
+              <th>Xu hướng</th>
+              <th onclick="sortBy('stock')">Tồn kho <span class="sort-icon bi bi-chevron-expand"></span></th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <tr><td colspan="8"><div class="state-box"><i class="bi bi-hourglass-split"></i><p>Đang tải...</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination" style="display:none">
+        <span id="pagination-info"></span>
+        <div class="pagination-btns" id="pagination-btns"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -102,6 +256,307 @@
       window.location.href = '/admin-login/';
     }
   })();
+
+  let allProducts = [];
+  let filteredProducts = [];
+  let sortField = 'rank';
+  let sortAsc = true;
+  let currentPage = 1;
+  const PAGE_SIZE = 10;
+
+  function fmtMoney(val) {
+    if (val == null) return '—';
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(val);
+  }
+
+  function fmtNum(val) {
+    if (val == null) return '—';
+    return new Intl.NumberFormat('vi-VN').format(val);
+  }
+
+  function rankClass(i) {
+    if (i === 0) return 'top1';
+    if (i === 1) return 'top2';
+    if (i === 2) return 'top3';
+    return '';
+  }
+
+  function stockBadge(stock) {
+    if (stock == null) return '';
+    if (stock === 0) return `<span class="stock-badge out"><i class="bi bi-x-circle"></i> Hết hàng</span>`;
+    if (stock <= 10) return `<span class="stock-badge low"><i class="bi bi-exclamation-triangle"></i> ${fmtNum(stock)}</span>`;
+    return `<span class="stock-badge ok"><i class="bi bi-check-circle"></i> ${fmtNum(stock)}</span>`;
+  }
+
+  function trendBadge(trend) {
+    if (trend == null) return '<span class="trend flat"><i class="bi bi-dash"></i> —</span>';
+    if (trend > 0) return `<span class="trend up"><i class="bi bi-arrow-up-short"></i>+${trend}%</span>`;
+    if (trend < 0) return `<span class="trend down"><i class="bi bi-arrow-down-short"></i>${trend}%</span>`;
+    return `<span class="trend flat"><i class="bi bi-dash"></i> 0%</span>`;
+  }
+
+  function renderStars(rating) {
+    if (rating == null) return '—';
+    const full = Math.floor(rating);
+    const half = (rating - full) >= 0.5 ? 1 : 0;
+    const empty = 5 - full - half;
+    let s = '';
+    for (let i = 0; i < full; i++) s += '<i class="bi bi-star-fill" style="color:#f59e0b;font-size:12px"></i>';
+    if (half) s += '<i class="bi bi-star-half" style="color:#f59e0b;font-size:12px"></i>';
+    for (let i = 0; i < empty; i++) s += '<i class="bi bi-star" style="color:#cbd5e1;font-size:12px"></i>';
+    s += `<span style="margin-left:4px;font-size:12px;color:var(--text-sub)">${parseFloat(rating).toFixed(1)}</span>`;
+    return s;
+  }
+
+  function getEmoji(name) {
+    if (!name) return '📦';
+    const n = name.toLowerCase();
+    if (n.includes('điện thoại') || n.includes('phone') || n.includes('iphone') || n.includes('samsung')) return '📱';
+    if (n.includes('laptop') || n.includes('macbook')) return '💻';
+    if (n.includes('tai nghe') || n.includes('headphone') || n.includes('airpod')) return '🎧';
+    if (n.includes('máy tính bảng') || n.includes('ipad') || n.includes('tablet')) return '📟';
+    if (n.includes('đồng hồ') || n.includes('watch')) return '⌚';
+    if (n.includes('loa') || n.includes('speaker')) return '🔊';
+    if (n.includes('chuột') || n.includes('mouse')) return '🖱️';
+    if (n.includes('bàn phím') || n.includes('keyboard')) return '⌨️';
+    if (n.includes('máy ảnh') || n.includes('camera')) return '📷';
+    if (n.includes('sạc') || n.includes('charger') || n.includes('pin')) return '🔋';
+    return '📦';
+  }
+
+  function renderSummary(products) {
+    const total = products.length;
+    const totalQty = products.reduce((s, p) => s + (p.quantity_sold || 0), 0);
+    const totalRev = products.reduce((s, p) => s + (p.revenue || 0), 0);
+    const ratings = products.filter(p => p.rating != null);
+    const avgRating = ratings.length ? (ratings.reduce((s, p) => s + p.rating, 0) / ratings.length).toFixed(1) : '—';
+
+    document.getElementById('summary-grid').innerHTML = `
+      <div class="summary-card">
+        <div class="sc-label"><i class="bi bi-box-seam"></i> Tổng sản phẩm</div>
+        <div class="sc-value">${total}</div>
+        <div class="sc-sub">trong bộ lọc hiện tại</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-label"><i class="bi bi-bag-check"></i> Tổng đơn bán</div>
+        <div class="sc-value">${fmtNum(totalQty)}</div>
+        <div class="sc-sub">sản phẩm đã bán</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-label"><i class="bi bi-currency-dollar"></i> Tổng doanh thu</div>
+        <div class="sc-value" style="font-size:16px">${fmtMoney(totalRev)}</div>
+        <div class="sc-sub">từ top sản phẩm</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-label"><i class="bi bi-star-fill" style="color:#f59e0b"></i> Đánh giá TB</div>
+        <div class="sc-value">${avgRating}</div>
+        <div class="sc-sub">/ 5.0 sao</div>
+      </div>
+    `;
+  }
+
+  function renderTable() {
+    const maxRev = Math.max(...filteredProducts.map(p => p.revenue || 0), 1);
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const page = filteredProducts.slice(start, start + PAGE_SIZE);
+
+    if (page.length === 0) {
+      document.getElementById('table-body').innerHTML = `
+        <tr><td colspan="8">
+          <div class="state-box">
+            <i class="bi bi-search"></i>
+            <p>Không tìm thấy sản phẩm phù hợp.</p>
+          </div>
+        </td></tr>`;
+      document.getElementById('pagination').style.display = 'none';
+      return;
+    }
+
+    let rows = '';
+    page.forEach((p, i) => {
+      const globalIdx = start + i;
+      const revPct = maxRev > 0 ? Math.round((p.revenue || 0) / maxRev * 100) : 0;
+      rows += `<tr>
+        <td><div class="product-rank ${rankClass(globalIdx)}">${globalIdx + 1}</div></td>
+        <td>
+          <div class="product-cell">
+            <div class="product-thumb">${getEmoji(p.name)}</div>
+            <div class="product-info">
+              <span class="product-name" title="${p.name || ''}">${p.name || 'N/A'}</span>
+              <span class="product-id">#${p.id || p.product_id || '—'}</span>
+            </div>
+          </div>
+        </td>
+        <td><span class="cat-badge">${p.category || p.category_name || '—'}</span></td>
+        <td><span class="qty-text">${fmtNum(p.quantity_sold)}</span></td>
+        <td>
+          <div class="revenue-cell">
+            <div class="rev-bar-wrap"><div class="rev-bar" style="width:${revPct}%"></div></div>
+            <span class="rev-text">${fmtMoney(p.revenue)}</span>
+          </div>
+        </td>
+        <td>${renderStars(p.rating)}</td>
+        <td>${trendBadge(p.trend)}</td>
+        <td>${stockBadge(p.stock ?? p.stock_quantity)}</td>
+      </tr>`;
+    });
+
+    document.getElementById('table-body').innerHTML = rows;
+    renderPagination();
+  }
+
+  function renderPagination() {
+    const total = filteredProducts.length;
+    const totalPages = Math.ceil(total / PAGE_SIZE);
+    const start = (currentPage - 1) * PAGE_SIZE + 1;
+    const end = Math.min(currentPage * PAGE_SIZE, total);
+
+    document.getElementById('pagination').style.display = 'flex';
+    document.getElementById('pagination-info').textContent = `Hiển thị ${start}–${end} / ${fmtNum(total)} sản phẩm`;
+
+    let btns = '';
+    btns += `<button class="pg-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}><i class="bi bi-chevron-left"></i></button>`;
+    for (let i = 1; i <= totalPages; i++) {
+      if (totalPages > 7 && i > 2 && i < totalPages - 1 && Math.abs(i - currentPage) > 1) {
+        if (i === 3 || i === totalPages - 2) btns += `<button class="pg-btn" disabled style="border:none;background:none">…</button>`;
+        continue;
+      }
+      btns += `<button class="pg-btn ${i === currentPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+    }
+    btns += `<button class="pg-btn" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}><i class="bi bi-chevron-right"></i></button>`;
+    document.getElementById('pagination-btns').innerHTML = btns;
+  }
+
+  function goPage(p) {
+    const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE);
+    if (p < 1 || p > totalPages) return;
+    currentPage = p;
+    renderTable();
+  }
+
+  function filterTable() {
+    const q = document.getElementById('search-box').value.toLowerCase().trim();
+    filteredProducts = q
+      ? allProducts.filter(p =>
+          (p.name || '').toLowerCase().includes(q) ||
+          (p.category || p.category_name || '').toLowerCase().includes(q) ||
+          String(p.id || p.product_id || '').includes(q)
+        )
+      : [...allProducts];
+    currentPage = 1;
+    renderTable();
+  }
+
+  let currentSortField = 'rank';
+  let currentSortAsc = true;
+
+  function sortBy(field) {
+    if (currentSortField === field) {
+      currentSortAsc = !currentSortAsc;
+    } else {
+      currentSortField = field;
+      currentSortAsc = field === 'rank';
+    }
+
+    document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
+    const headers = { rank: 0, category: 2, quantity_sold: 3, revenue: 4, rating: 5, stock: 7 };
+    const idx = headers[field];
+    if (idx !== undefined) {
+      const th = document.querySelectorAll('thead th')[idx];
+      if (th) {
+        th.classList.add('sorted');
+        const icon = th.querySelector('.sort-icon');
+        if (icon) { icon.className = 'sort-icon bi ' + (currentSortAsc ? 'bi-chevron-up' : 'bi-chevron-down'); }
+      }
+    }
+
+    filteredProducts.sort((a, b) => {
+      let va = a[field] ?? (field === 'rank' ? 9999 : -Infinity);
+      let vb = b[field] ?? (field === 'rank' ? 9999 : -Infinity);
+      if (typeof va === 'string') va = va.toLowerCase();
+      if (typeof vb === 'string') vb = vb.toLowerCase();
+      if (va < vb) return currentSortAsc ? -1 : 1;
+      if (va > vb) return currentSortAsc ? 1 : -1;
+      return 0;
+    });
+    currentPage = 1;
+    renderTable();
+  }
+
+  async function loadData() {
+    const btn = document.getElementById('btn-refresh');
+    btn.classList.add('loading');
+
+    const period = document.getElementById('period-select').value;
+    const limit = document.getElementById('limit-select').value;
+
+    document.getElementById('table-body').innerHTML = `<tr><td colspan="8"><div class="state-box"><i class="bi bi-hourglass-split"></i><p>Đang tải dữ liệu...</p></div></td></tr>`;
+    document.getElementById('pagination').style.display = 'none';
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const url = `/api/admin/top-products/?period=${period}&limit=${limit}`;
+      const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status}: ${errText || res.statusText}`);
+      }
+
+      const data = await res.json();
+
+      // Support both array and {results: [...]} / {data: [...]} / {products: [...]}
+      let products = [];
+      if (Array.isArray(data)) {
+        products = data;
+      } else if (Array.isArray(data.results)) {
+        products = data.results;
+      } else if (Array.isArray(data.data)) {
+        products = data.data;
+      } else if (Array.isArray(data.products)) {
+        products = data.products;
+      } else {
+        products = Object.values(data).find(v => Array.isArray(v)) || [];
+      }
+
+      // Normalize rank field
+      products = products.map((p, i) => ({ rank: i + 1, ...p }));
+
+      allProducts = products;
+      filteredProducts = [...allProducts];
+      currentSortField = 'rank';
+      currentSortAsc = true;
+      currentPage = 1;
+
+      renderSummary(products);
+      renderTable();
+
+      const now = new Date();
+      document.getElementById('last-updated').textContent =
+        `Cập nhật lúc ${now.toLocaleTimeString('vi-VN')} — ${products.length} sản phẩm`;
+
+    } catch (err) {
+      console.error('API error:', err);
+      document.getElementById('table-body').innerHTML = `
+        <tr><td colspan="8">
+          <div class="state-box">
+            <i class="bi bi-exclamation-circle"></i>
+            <p>Không thể tải dữ liệu.<br><small style="color:#94a3b8">${err.message}</small></p>
+            <button class="btn-retry" onclick="loadData()"><i class="bi bi-arrow-clockwise"></i> Thử lại</button>
+          </div>
+        </td></tr>`;
+      document.getElementById('last-updated').textContent = 'Tải thất bại';
+    } finally {
+      btn.classList.remove('loading');
+    }
+  }
+
+  document.getElementById('period-select').addEventListener('change', loadData);
+  document.getElementById('limit-select').addEventListener('change', loadData);
+
+  loadData();
 </script>
 </body>
 </html>
