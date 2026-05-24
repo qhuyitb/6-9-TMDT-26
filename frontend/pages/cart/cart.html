@@ -156,6 +156,54 @@
         font-weight: 800;
     }
 
+    .payment-methods {
+        padding-top: 14px;
+        border-top: 1px solid var(--border);
+        display: grid;
+        gap: 10px;
+    }
+
+    .payment-title {
+        font-weight: 800;
+        color: var(--text-dark);
+    }
+
+    .payment-option {
+        display: grid;
+        grid-template-columns: 18px minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        cursor: pointer;
+        background: var(--white);
+    }
+
+    .payment-option:has(input:checked) {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(229, 57, 53, .10);
+    }
+
+    .payment-option input {
+        margin-top: 3px;
+        accent-color: var(--primary);
+    }
+
+    .payment-name {
+        display: block;
+        font-weight: 800;
+        color: var(--text-dark);
+    }
+
+    .payment-desc {
+        display: block;
+        margin-top: 3px;
+        color: var(--text-light);
+        font-size: .88rem;
+        line-height: 1.35;
+    }
+
     .checkout-btn,
     .continue-btn {
         border-radius: var(--radius);
@@ -295,6 +343,23 @@
                         <span>Tổng cộng</span>
                         <strong>${formatPrice(cart.total_price || 0)}</strong>
                     </div>
+                    <div class="payment-methods" role="radiogroup" aria-label="Phương thức thanh toán">
+                        <div class="payment-title">Phương thức thanh toán</div>
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="cod" checked>
+                            <span>
+                                <span class="payment-name">Thanh toán khi nhận hàng</span>
+                                <span class="payment-desc">Đặt hàng trước, thanh toán tiền mặt khi đơn được giao.</span>
+                            </span>
+                        </label>
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="vnpay">
+                            <span>
+                                <span class="payment-name">Thanh toán qua VNPay</span>
+                                <span class="payment-desc">Chuyển sang cổng VNPay để thanh toán online.</span>
+                            </span>
+                        </label>
+                    </div>
                     <button class="checkout-btn" type="button" onclick="checkoutCart(this)">Thanh toán</button>
                     <a class="continue-btn" href="/shop/">Tiếp tục mua hàng</a>
                 </aside>
@@ -384,9 +449,10 @@
         button.textContent = 'Đang xử lý...';
 
         try {
+            const paymentMethod = getSelectedPaymentMethod();
             const address = await getCheckoutAddress(token);
             const payload = {
-                payment_method: 'cod',
+                payment_method: paymentMethod,
                 shipping_method: 'standard',
                 shipping_fee: 0,
                 note: ''
@@ -411,6 +477,11 @@
             }
 
             updateHeaderBadge(0);
+            if (paymentMethod === 'vnpay' && data.payment_url) {
+                window.location.href = data.payment_url;
+                return;
+            }
+
             window.location.href = `/orders/?created=${encodeURIComponent(data.id)}`;
         } catch (error) {
             alert('Không thể kết nối backend.');
@@ -418,6 +489,10 @@
             button.disabled = false;
             button.textContent = oldText;
         }
+    }
+
+    function getSelectedPaymentMethod() {
+        return document.querySelector('input[name="paymentMethod"]:checked')?.value || 'cod';
     }
 
     async function getCheckoutAddress(token) {
