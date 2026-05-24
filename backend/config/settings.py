@@ -164,8 +164,13 @@ VNPAY_RETURN_URL = env(
     'VNPAY_RETURN_URL',
     default='http://127.0.0.1:8000/api/orders/vnpay/return/',
 )
+VNPAY_IPN_URL = env(
+    'VNPAY_IPN_URL',
+    default='http://127.0.0.1:8000/api/orders/vnpay/ipn/',
+)
 VNPAY_FRONTEND_RETURN_URL = env(
     'VNPAY_FRONTEND_RETURN_URL',
     default='http://127.0.0.1:8000/orders/',
 )
 VNPAY_EXPIRE_MINUTES = env.int('VNPAY_EXPIRE_MINUTES', default=15)
+VNPAY_CONFIRM_ON_RETURN = env.bool('VNPAY_CONFIRM_ON_RETURN', default=False)

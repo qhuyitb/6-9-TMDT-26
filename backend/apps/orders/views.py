@@ -98,7 +98,7 @@ class OrderListCreateView(APIView):
             subtotal_amount = subtotal,
             shipping_fee    = shipping_fee,
             total_amount    = total_amount,
-            payment_status  = Order.PAYMENT_PAID if payment_method == Payment.METHOD_COD else Order.PAYMENT_PENDING,
+            payment_status  = Order.PAYMENT_UNPAID if payment_method == Payment.METHOD_COD else Order.PAYMENT_PENDING,
         )
 
         # Tạo OrderItems + trừ tồn kho
@@ -113,20 +113,14 @@ class OrderListCreateView(APIView):
             item.product.save(update_fields=['stock_quantity'])
 
         # Tạo Payment
-        is_cod = payment_method == Payment.METHOD_COD
         payment = Payment.objects.create(
             order          = order,
             payment_method = payment_method,
             amount         = total_amount,
-            status         = Payment.STATUS_SUCCESS if is_cod else Payment.STATUS_PENDING,
+            status         = Payment.STATUS_PENDING,
             transaction_ref= order.order_code if payment_method == Payment.METHOD_VNPAY else None,
-            paid_at        = timezone.now() if is_cod else None,
+            paid_at        = None,
         )
-
-        # Cập nhật payment_status trên Order nếu COD
-        if is_cod:
-            order.payment_status = Order.PAYMENT_PAID
-            order.save(update_fields=['payment_status'])
 
         # Don hang da co ban sao OrderItem rieng, nen lam trong gio hang
         # de khach co the tiep tuc mua hang voi cung Cart OneToOne.
@@ -261,7 +255,7 @@ class VNPayReturnView(APIView):
     authentication_classes = []
 
     def get(self, request):
-        result = handle_vnpay_callback(dict(request.GET.items()))
+        result = inspect_vnpay_return(dict(request.GET.items()))
         return redirect(build_frontend_result_url(result))
 
 
@@ -274,14 +268,70 @@ class VNPayIPNView(APIView):
     authentication_classes = []
 
     def get(self, request):
-        result = handle_vnpay_callback(dict(request.GET.items()))
+        result = handle_vnpay_ipn(dict(request.GET.items()))
         return Response({
             'RspCode': result['rsp_code'],
             'Message': result['message'],
         })
 
 
-def handle_vnpay_callback(params):
+def inspect_vnpay_return(params):
+    if not validate_vnpay_response(params):
+        return {
+            'ok': False,
+            'payment_result': 'invalid',
+            'order_id': '',
+            'rsp_code': '97',
+            'message': 'Invalid checksum',
+        }
+
+    txn_ref = params.get('vnp_TxnRef', '')
+    response_code = params.get('vnp_ResponseCode', '')
+    transaction_status = params.get('vnp_TransactionStatus', '')
+
+    try:
+        payment = Payment.objects.select_related('order').get(
+            transaction_ref=txn_ref,
+            payment_method=Payment.METHOD_VNPAY,
+        )
+    except Payment.DoesNotExist:
+        return {
+            'ok': False,
+            'payment_result': 'failed',
+            'order_id': '',
+            'rsp_code': '01',
+            'message': 'Order not found',
+        }
+
+    if payment.status == Payment.STATUS_PENDING:
+        payment.gateway_response = json.dumps({
+            'source': 'return_url',
+            'params': params,
+        }, ensure_ascii=True)
+        payment.save(update_fields=['gateway_response'])
+
+    if response_code == '00' and transaction_status == '00':
+        if settings.VNPAY_CONFIRM_ON_RETURN:
+            return handle_vnpay_ipn(params, source='return_url_fallback')
+
+        return {
+            'ok': True,
+            'payment_result': 'processing',
+            'order_id': payment.order_id,
+            'rsp_code': '00',
+            'message': 'Waiting for IPN confirmation',
+        }
+
+    return {
+        'ok': False,
+        'payment_result': 'failed',
+        'order_id': payment.order_id,
+        'rsp_code': response_code or '99',
+        'message': 'Payment failed on VNPay',
+    }
+
+
+def handle_vnpay_ipn(params, source='ipn'):
     if not validate_vnpay_response(params):
         return {
             'ok': False,
@@ -307,7 +357,10 @@ def handle_vnpay_callback(params):
             if int(vnp_amount) != int(payment.amount * 100):
                 if payment.status == Payment.STATUS_PENDING:
                     payment.status = Payment.STATUS_RECONCILE_PENDING
-                    payment.gateway_response = json.dumps(params, ensure_ascii=True)
+                    payment.gateway_response = json.dumps({
+                        'source': source,
+                        'params': params,
+                    }, ensure_ascii=True)
                     payment.save(update_fields=['status', 'gateway_response'])
                     order.payment_status = Order.PAYMENT_RECONCILE_PENDING
                     order.save(update_fields=['payment_status'])
@@ -330,7 +383,10 @@ def handle_vnpay_callback(params):
 
             if response_code == '00' and transaction_status == '00':
                 payment.status = Payment.STATUS_SUCCESS
-                payment.gateway_response = json.dumps(params, ensure_ascii=True)
+                payment.gateway_response = json.dumps({
+                    'source': source,
+                    'params': params,
+                }, ensure_ascii=True)
                 payment.paid_at = timezone.now()
                 payment.save(update_fields=['status', 'gateway_response', 'paid_at'])
 
@@ -346,7 +402,10 @@ def handle_vnpay_callback(params):
                 }
 
             payment.status = Payment.STATUS_FAILED
-            payment.gateway_response = json.dumps(params, ensure_ascii=True)
+            payment.gateway_response = json.dumps({
+                'source': source,
+                'params': params,
+            }, ensure_ascii=True)
             payment.save(update_fields=['status', 'gateway_response'])
 
             order.payment_status = Order.PAYMENT_FAILED

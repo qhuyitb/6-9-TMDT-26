@@ -28,6 +28,10 @@
     .order-address { grid-column: 1 / -1; }
     .order-total { display: flex; justify-content: flex-end; gap: 12px; align-items: baseline; padding-top: 12px; border-top: 1px solid var(--border); font-size: 1.05rem; }
     .order-total strong { color: var(--primary); font-size: 1.2rem; }
+    .payment-result { display: none; margin-bottom: 16px; padding: 12px 14px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--white); font-weight: 700; }
+    .payment-result.success { display: block; border-color: #86efac; background: #f0fdf4; color: #166534; }
+    .payment-result.processing { display: block; border-color: #fed7aa; background: #fff7ed; color: #9a3412; }
+    .payment-result.failed { display: block; border-color: #fecaca; background: #fef2f2; color: #991b1b; }
     .empty-orders { padding: 34px 24px; text-align: center; color: var(--text-mid); }
     .continue-btn { border: 1px solid var(--border); background: var(--white); color: var(--text-dark); border-radius: var(--radius); padding: 12px 14px; text-align: center; font-weight: 800; display: inline-block; margin-top: 14px; }
     @media (max-width: 720px) {
@@ -44,6 +48,7 @@
     <div class="orders-header">
         <h1 class="orders-title">Đơn hàng của tôi</h1>
     </div>
+    <div id="paymentResult" class="payment-result"></div>
     <div id="ordersContent" class="orders-list">
         <div class="empty-orders">Đang tải đơn hàng...</div>
     </div>
@@ -53,10 +58,41 @@
 {% block extra_js %}
 <script>
     const ORDERS_API_BASE = 'http://127.0.0.1:8000/api';
+    let paymentPollTimer = null;
+    let paymentPollCount = 0;
 
     document.addEventListener('DOMContentLoaded', () => {
+        renderPaymentResult();
         loadOrders();
+        startPaymentPolling();
     });
+
+    function renderPaymentResult() {
+        const params = new URLSearchParams(window.location.search);
+        const payment = params.get('payment');
+        const notice = document.getElementById('paymentResult');
+        if (!payment || !notice) return;
+
+        if (payment === 'processing') {
+            notice.className = 'payment-result processing';
+            notice.textContent = 'VNPay đã chuyển kết quả về. Hệ thống đang chờ IPN để xác nhận thanh toán.';
+            return;
+        }
+
+        if (payment === 'success') {
+            renderPaymentNotice('success');
+            return;
+        }
+
+        if (payment === 'invalid') {
+            notice.className = 'payment-result failed';
+            notice.textContent = 'Kết quả thanh toán không hợp lệ. Hệ thống chưa cập nhật trạng thái đơn hàng.';
+            return;
+        }
+
+        notice.className = 'payment-result failed';
+        notice.textContent = 'VNPay báo giao dịch không thành công. Trạng thái cuối cùng sẽ được cập nhật qua IPN.';
+    }
 
     async function loadOrders() {
         const token = getAccessToken();
@@ -78,9 +114,72 @@
 
             const orders = await res.json();
             renderOrders(orders);
+            updatePaymentNoticeFromOrders(orders);
         } catch (error) {
             document.getElementById('ordersContent').innerHTML =
                 '<div class="empty-orders">Không thể tải đơn hàng.</div>';
+        }
+    }
+
+    function startPaymentPolling() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('payment') !== 'processing' || paymentPollTimer) return;
+
+        paymentPollTimer = setInterval(() => {
+            paymentPollCount += 1;
+            if (paymentPollCount > 10) {
+                clearInterval(paymentPollTimer);
+                paymentPollTimer = null;
+                return;
+            }
+            loadOrders();
+        }, 3000);
+    }
+
+    function updatePaymentNoticeFromOrders(orders) {
+        const params = new URLSearchParams(window.location.search);
+        const createdId = params.get('created');
+        if (params.get('payment') !== 'processing' || !createdId) return;
+
+        const order = (orders || []).find(item => String(item.id) === createdId);
+        if (!order) return;
+
+        if (order.payment_status === 'paid') {
+            renderPaymentNotice('success');
+            stopPaymentPolling();
+        } else if (order.payment_status === 'failed') {
+            renderPaymentNotice('failed');
+            stopPaymentPolling();
+        } else if (order.payment_status === 'reconcile_pending') {
+            renderPaymentNotice('reconcile_pending');
+            stopPaymentPolling();
+        }
+    }
+
+    function renderPaymentNotice(status) {
+        const notice = document.getElementById('paymentResult');
+        if (!notice) return;
+
+        if (status === 'success') {
+            notice.className = 'payment-result success';
+            notice.textContent = 'Thanh toán VNPay đã được IPN xác nhận thành công.';
+            return;
+        }
+
+        if (status === 'reconcile_pending') {
+            notice.className = 'payment-result processing';
+            notice.textContent = 'Thanh toán cần đối soát vì dữ liệu VNPay không khớp đơn hàng.';
+            return;
+        }
+
+        notice.className = 'payment-result failed';
+        notice.textContent = 'Thanh toán VNPay không thành công. Vui lòng kiểm tra lại đơn hàng hoặc thử thanh toán lại.';
+    }
+
+    function stopPaymentPolling() {
+        if (paymentPollTimer) {
+            clearInterval(paymentPollTimer);
+            paymentPollTimer = null;
         }
     }
 
@@ -196,7 +295,8 @@
             pending: 'Chờ thanh toán',
             paid: 'Đã thanh toán',
             failed: 'Thanh toán lỗi',
-            refunded: 'Đã hoàn tiền'
+            refunded: 'Đã hoàn tiền',
+            reconcile_pending: 'Chờ đối soát'
         }[status] || status;
     }
 
