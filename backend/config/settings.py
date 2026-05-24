@@ -152,3 +152,20 @@ SIMPLE_JWT = {
 CORS_ALLOW_ALL_ORIGINS = True
 
 AUTH_USER_MODEL = 'users.User'
+
+# VNPay
+VNPAY_TMN_CODE = env('VNPAY_TMN_CODE', default='')
+VNPAY_HASH_SECRET_KEY = env('VNPAY_HASH_SECRET_KEY', default='')
+VNPAY_PAYMENT_URL = env(
+    'VNPAY_PAYMENT_URL',
+    default='https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
+)
+VNPAY_RETURN_URL = env(
+    'VNPAY_RETURN_URL',
+    default='http://127.0.0.1:8000/api/orders/vnpay/return/',
+)
+VNPAY_FRONTEND_RETURN_URL = env(
+    'VNPAY_FRONTEND_RETURN_URL',
+    default='http://127.0.0.1:8000/orders/',
+)
+VNPAY_EXPIRE_MINUTES = env.int('VNPAY_EXPIRE_MINUTES', default=15)
