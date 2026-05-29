@@ -1,0 +1,353 @@
+{% extends 'pages/login/base.html' %}
+{% load static %}
+
+{% block title %}Sản phẩm yêu thích - TechShop{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'login.css' %}">
+<style>
+    .wishlist-shell {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 24px;
+    }
+
+    .wishlist-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+
+    .wishlist-title {
+        font-size: 1.55rem;
+        font-weight: 800;
+        color: var(--text-dark);
+    }
+
+    .wishlist-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 18px;
+    }
+
+    .wishlist-card,
+    .wishlist-empty {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .wishlist-card {
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .wishlist-thumb {
+        aspect-ratio: 4 / 3;
+        background: #eef0f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-light);
+        overflow: hidden;
+    }
+
+    .wishlist-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .wishlist-body {
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex: 1;
+    }
+
+    .wishlist-name {
+        color: var(--text-dark);
+        font-weight: 800;
+        line-height: 1.35;
+    }
+
+    .wishlist-price {
+        color: var(--primary);
+        font-size: 1.05rem;
+        font-weight: 800;
+        margin-top: auto;
+    }
+
+    .wishlist-actions {
+        display: grid;
+        grid-template-columns: 1fr 44px;
+        gap: 10px;
+    }
+
+    .add-cart-btn,
+    .remove-wishlist-btn,
+    .continue-btn {
+        border-radius: var(--radius);
+        cursor: pointer;
+        font-weight: 800;
+    }
+
+    .add-cart-btn {
+        border: none;
+        background: var(--primary);
+        color: var(--white);
+        padding: 11px 12px;
+    }
+
+    .remove-wishlist-btn {
+        border: 1px solid var(--border);
+        background: var(--white);
+        color: var(--primary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .add-cart-btn:disabled,
+    .remove-wishlist-btn:disabled {
+        cursor: wait;
+        opacity: .72;
+    }
+
+    .wishlist-empty {
+        padding: 34px 24px;
+        text-align: center;
+        color: var(--text-mid);
+    }
+
+    .wishlist-empty p {
+        margin-bottom: 16px;
+    }
+
+    .continue-btn {
+        border: 1px solid var(--border);
+        background: var(--white);
+        color: var(--text-dark);
+        display: inline-block;
+        padding: 12px 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="wishlist-shell">
+    <div class="wishlist-header">
+        <h1 class="wishlist-title">Sản phẩm yêu thích</h1>
+    </div>
+
+    <div id="wishlistContent">
+        <div class="wishlist-empty">Đang tải danh sách yêu thích...</div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const WISHLIST_API_BASE = 'http://127.0.0.1:8000/api';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadWishlist();
+        loadCartSummary();
+    });
+
+    async function loadWishlist() {
+        try {
+            const res = await fetch(`${WISHLIST_API_BASE}/auth/wishlist/`, {
+                headers: getCustomerHeaders()
+            });
+
+            if (res.status === 401) {
+                renderLoginRequired();
+                return;
+            }
+            if (!res.ok) throw new Error('Cannot load wishlist');
+
+            const wishlist = await res.json();
+            renderWishlist(wishlist.items || []);
+        } catch (error) {
+            document.getElementById('wishlistContent').innerHTML =
+                '<div class="wishlist-empty">Không thể tải danh sách yêu thích.</div>';
+        }
+    }
+
+    function renderWishlist(items) {
+        const container = document.getElementById('wishlistContent');
+
+        if (!items.length) {
+            container.innerHTML = `
+                <div class="wishlist-empty">
+                    <p>Danh sách yêu thích đang trống.</p>
+                    <a class="continue-btn" href="/shop/">Tiếp tục mua hàng</a>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="wishlist-grid">
+                ${items.map(renderWishlistItem).join('')}
+            </div>
+        `;
+    }
+
+    function renderWishlistItem(item) {
+        const image = item.image
+            ? `<img src="${item.image}" alt="${escapeHtml(item.product_name)}">`
+            : '<span>Image</span>';
+
+        return `
+            <article class="wishlist-card">
+                <div class="wishlist-thumb">${image}</div>
+                <div class="wishlist-body">
+                    <div class="wishlist-name">${escapeHtml(item.product_name)}</div>
+                    <div class="wishlist-price">${formatPrice(item.price)}</div>
+                    <div class="wishlist-actions">
+                        <button class="add-cart-btn" type="button" onclick="addToCart(${item.product_id}, this)">Thêm vào giỏ</button>
+                        <button class="remove-wishlist-btn" type="button" title="Bỏ yêu thích" aria-label="Bỏ yêu thích" onclick="removeWishlistItem(${item.product_id}, this)">
+                            <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </article>
+        `;
+    }
+
+    async function removeWishlistItem(productId, button) {
+        button.disabled = true;
+        try {
+            const res = await fetch(`${WISHLIST_API_BASE}/auth/wishlist/items/${productId}/`, {
+                method: 'DELETE',
+                headers: getCustomerHeaders()
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                alert(data.error || 'Không thể xóa sản phẩm khỏi yêu thích.');
+                return;
+            }
+
+            renderWishlist(data.items || []);
+        } catch (error) {
+            alert('Không thể kết nối backend.');
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    async function addToCart(productId, button) {
+        const oldText = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Đang thêm...';
+
+        try {
+            const res = await fetch(`${WISHLIST_API_BASE}/auth/cart/items/`, {
+                method: 'POST',
+                headers: getCustomerHeaders(true),
+                body: JSON.stringify({ product_id: productId, quantity: 1 })
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                alert(data.error || 'Không thể thêm sản phẩm vào giỏ hàng.');
+                return;
+            }
+
+            updateHeaderBadge(data.total_quantity || 0);
+        } catch (error) {
+            alert('Không thể kết nối backend.');
+        } finally {
+            button.disabled = false;
+            button.textContent = oldText;
+        }
+    }
+
+    async function loadCartSummary() {
+        try {
+            const res = await fetch(`${WISHLIST_API_BASE}/auth/cart/`, {
+                headers: getCustomerHeaders()
+            });
+            if (!res.ok) {
+                updateHeaderBadge(0);
+                return;
+            }
+            const data = await res.json();
+            updateHeaderBadge(data.total_quantity || 0);
+        } catch (error) {
+            updateHeaderBadge(0);
+        }
+    }
+
+    function renderLoginRequired() {
+        document.getElementById('wishlistContent').innerHTML = `
+            <div class="wishlist-empty">
+                <p>Bạn cần đăng nhập để xem danh sách yêu thích.</p>
+                <a class="continue-btn" href="/login/">Đăng nhập</a>
+            </div>
+        `;
+    }
+
+    function updateHeaderBadge(totalQuantity) {
+        const badge = document.querySelector('.header-actions .badge');
+        if (badge) {
+            badge.textContent = totalQuantity;
+        }
+    }
+
+    function getAccessToken() {
+        return localStorage.getItem('access_token') || '';
+    }
+
+    function getCustomerHeaders(includeJson = false) {
+        const headers = {};
+        if (includeJson) headers['Content-Type'] = 'application/json';
+
+        const token = getAccessToken();
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        } else {
+            headers['X-Guest-Session'] = getGuestSessionId();
+        }
+        return headers;
+    }
+
+    function getGuestSessionId() {
+        let sessionId = localStorage.getItem('guest_session_id');
+        if (!sessionId) {
+            const randomPart = crypto.randomUUID
+                ? crypto.randomUUID().replace(/-/g, '')
+                : `${Date.now()}${Math.random().toString(16).slice(2)}`;
+            sessionId = `guest_${randomPart}`;
+            localStorage.setItem('guest_session_id', sessionId);
+        }
+        return sessionId;
+    }
+
+    function formatPrice(price) {
+        const value = Number(price);
+        if (!Number.isFinite(value)) return '0 ₫';
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(value);
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+</script>
+{% endblock %}

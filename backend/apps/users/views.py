@@ -3,9 +3,105 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.db import transaction
+from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from apps.products.models import Product
-from .models import Cart, CartItem
-from .serializers import RegisterSerializer, LoginSerializer, CartSerializer
+from .models import Cart, CartItem, Wishlist, WishlistItem
+from .serializers import (
+    CartSerializer,
+    LoginSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
+    RegisterSerializer,
+)
+
+
+def get_guest_session_id(request):
+    session_id = (
+        request.headers.get('X-Guest-Session')
+        or request.data.get('guest_session_id')
+        or request.query_params.get('guest_session_id')
+    )
+    if not session_id:
+        return ''
+
+    session_id = str(session_id).strip()
+    if len(session_id) > 100 or not session_id.startswith('guest_'):
+        return ''
+    return session_id
+
+
+def get_customer_cart(request):
+    if request.user and request.user.is_authenticated:
+        cart, _ = Cart.objects.get_or_create(user=request.user)
+        return cart, None
+
+    session_id = get_guest_session_id(request)
+    if not session_id:
+        return None, Response(
+            {'error': 'Thiếu mã phiên khách vãng lai.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    cart, _ = Cart.objects.get_or_create(session_id=session_id)
+    return cart, None
+
+
+def get_customer_wishlist(request):
+    if request.user and request.user.is_authenticated:
+        wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
+        return wishlist, None
+
+    session_id = get_guest_session_id(request)
+    if not session_id:
+        return None, Response(
+            {'error': 'Thiếu mã phiên khách vãng lai.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    wishlist, _ = Wishlist.objects.get_or_create(session_id=session_id)
+    return wishlist, None
+
+
+@transaction.atomic
+def merge_guest_data_into_user(user, session_id):
+    if not session_id:
+        return
+
+    guest_cart = Cart.objects.filter(session_id=session_id, user__isnull=True).first()
+    if guest_cart:
+        user_cart, _ = Cart.objects.get_or_create(user=user)
+        for guest_item in guest_cart.items.select_related('product'):
+            if guest_item.product.stock_quantity <= 0:
+                continue
+            item, created = CartItem.objects.get_or_create(
+                cart=user_cart,
+                product=guest_item.product,
+                defaults={
+                    'quantity': min(guest_item.quantity, guest_item.product.stock_quantity),
+                    'unit_price': guest_item.product.price,
+                }
+            )
+            if not created:
+                item.quantity = min(item.quantity + guest_item.quantity, guest_item.product.stock_quantity)
+                item.unit_price = guest_item.product.price
+                item.save(update_fields=['quantity', 'unit_price', 'updated_at'])
+        guest_cart.delete()
+
+    guest_wishlist = Wishlist.objects.filter(session_id=session_id, user__isnull=True).first()
+    if guest_wishlist:
+        user_wishlist, _ = Wishlist.objects.get_or_create(user=user)
+        for guest_item in guest_wishlist.items.select_related('product'):
+            WishlistItem.objects.get_or_create(
+                wishlist=user_wishlist,
+                product=guest_item.product,
+            )
+        guest_wishlist.delete()
 
 
 class RegisterView(generics.CreateAPIView):
@@ -44,6 +140,7 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data['user']
+        merge_guest_data_into_user(user, get_guest_session_id(request))
         refresh = RefreshToken.for_user(user)
 
         return Response({
@@ -58,21 +155,74 @@ class LoginView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+class PasswordResetRequestView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.get_user()
+
+        response_data = {
+            'message': 'Nếu email tồn tại, hệ thống đã gửi hướng dẫn đặt lại mật khẩu.'
+        }
+
+        if user:
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            reset_path = reverse('reset_password_page', kwargs={'uid': uid, 'token': token})
+            reset_url = request.build_absolute_uri(reset_path)
+
+            send_mail(
+                subject='Đặt lại mật khẩu TechShop',
+                message=(
+                    f'Xin chào {user.full_name},\n\n'
+                    f'Bạn có thể đặt lại mật khẩu tại liên kết sau:\n{reset_url}\n\n'
+                    'Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.'
+                ),
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
+                recipient_list=[user.email],
+                fail_silently=True,
+            )
+
+            if settings.DEBUG:
+                response_data['reset_url'] = reset_url
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        user.set_password(serializer.validated_data['password'])
+        user.save(update_fields=['password', 'updated_at'])
+
+        return Response({'message': 'Đặt lại mật khẩu thành công.'}, status=status.HTTP_200_OK)
+
+
 class CartView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get_cart(self, request):
-        cart, _ = Cart.objects.get_or_create(user=request.user)
+        cart, error = get_customer_cart(request)
+        if error:
+            return None
         return cart
 
     def get(self, request):
-        cart = self.get_cart(request)
+        cart, error = get_customer_cart(request)
+        if error:
+            return error
         serializer = CartSerializer(cart, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class CartItemAddView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         product_id = request.data.get('product_id')
@@ -92,7 +242,9 @@ class CartItemAddView(APIView):
         if product.stock_quantity < quantity:
             return Response({'error': 'Số lượng tồn kho không đủ.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        cart, _ = Cart.objects.get_or_create(user=request.user)
+        cart, error = get_customer_cart(request)
+        if error:
+            return error
         item, created = CartItem.objects.get_or_create(
             cart=cart,
             product=product,
@@ -111,14 +263,16 @@ class CartItemAddView(APIView):
 
 
 class CartItemUpdateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def patch(self, request, item_id):
         try:
             quantity = int(request.data.get('quantity', 1))
         except (TypeError, ValueError):
             return Response({'error': 'Số lượng không hợp lệ.'}, status=status.HTTP_400_BAD_REQUEST)
-        cart, _ = Cart.objects.get_or_create(user=request.user)
+        cart, error = get_customer_cart(request)
+        if error:
+            return error
 
         try:
             item = cart.items.select_related('product').get(id=item_id)
@@ -138,10 +292,12 @@ class CartItemUpdateView(APIView):
 
 
 class CartItemDeleteView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def delete(self, request, item_id):
-        cart, _ = Cart.objects.get_or_create(user=request.user)
+        cart, error = get_customer_cart(request)
+        if error:
+            return error
         cart.items.filter(id=item_id).delete()
         serializer = CartSerializer(cart, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -249,10 +405,12 @@ class WishlistView(APIView):
     """
     GET /api/auth/wishlist/  — Lấy wishlist của user
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request):
-        wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
+        wishlist, error = get_customer_wishlist(request)
+        if error:
+            return error
         serializer = WishlistSerializer(wishlist, context={'request': request})
         return Response(serializer.data)
 
@@ -262,7 +420,7 @@ class WishlistItemAddView(APIView):
     POST /api/auth/wishlist/items/  — Thêm sản phẩm vào wishlist
     Body: { "product_id": 1 }
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         product_id = request.data.get('product_id')
@@ -274,7 +432,9 @@ class WishlistItemAddView(APIView):
         except Product.DoesNotExist:
             return Response({'error': 'Sản phẩm không tồn tại.'}, status=status.HTTP_404_NOT_FOUND)
 
-        wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
+        wishlist, error = get_customer_wishlist(request)
+        if error:
+            return error
         _, created = WishlistItem.objects.get_or_create(wishlist=wishlist, product=product)
 
         if not created:
@@ -288,13 +448,12 @@ class WishlistItemDeleteView(APIView):
     """
     DELETE /api/auth/wishlist/items/<product_id>/  — Xóa sản phẩm khỏi wishlist
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def delete(self, request, product_id):
-        try:
-            wishlist = Wishlist.objects.get(user=request.user)
-        except Wishlist.DoesNotExist:
-            return Response({'error': 'Wishlist không tồn tại.'}, status=status.HTTP_404_NOT_FOUND)
+        wishlist, error = get_customer_wishlist(request)
+        if error:
+            return error
 
         deleted, _ = WishlistItem.objects.filter(
             wishlist=wishlist, product_id=product_id

@@ -282,16 +282,9 @@
     });
 
     async function loadCart() {
-        const token = getAccessToken();
-        if (!token) {
-            renderLoginRequired();
-            updateHeaderBadge(0);
-            return;
-        }
-
         try {
             const res = await fetch(`${CART_API_BASE}/auth/cart/`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: getCustomerHeaders()
             });
 
             if (res.status === 401) {
@@ -391,16 +384,10 @@
     }
 
     async function changeQuantity(itemId, quantity) {
-        const token = getAccessToken();
-        if (!token) return renderLoginRequired();
-
         try {
             const res = await fetch(`${CART_API_BASE}/auth/cart/items/${itemId}/`, {
                 method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: getCustomerHeaders(true),
                 body: JSON.stringify({ quantity })
             });
             const cart = await res.json();
@@ -418,13 +405,10 @@
     }
 
     async function removeCartItem(itemId) {
-        const token = getAccessToken();
-        if (!token) return renderLoginRequired();
-
         try {
             const res = await fetch(`${CART_API_BASE}/auth/cart/items/${itemId}/delete/`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: getCustomerHeaders()
             });
             const cart = await res.json();
 
@@ -442,7 +426,11 @@
 
     async function checkoutCart(button) {
         const token = getAccessToken();
-        if (!token) return renderLoginRequired();
+        if (!token) {
+            alert('Bạn cần đăng nhập để thanh toán.');
+            window.location.href = '/login/?next=/cart/';
+            return;
+        }
 
         const oldText = button.textContent;
         button.disabled = true;
@@ -527,6 +515,31 @@
 
     function getAccessToken() {
         return localStorage.getItem('access_token') || '';
+    }
+
+    function getCustomerHeaders(includeJson = false) {
+        const headers = {};
+        if (includeJson) headers['Content-Type'] = 'application/json';
+
+        const token = getAccessToken();
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        } else {
+            headers['X-Guest-Session'] = getGuestSessionId();
+        }
+        return headers;
+    }
+
+    function getGuestSessionId() {
+        let sessionId = localStorage.getItem('guest_session_id');
+        if (!sessionId) {
+            const randomPart = crypto.randomUUID
+                ? crypto.randomUUID().replace(/-/g, '')
+                : `${Date.now()}${Math.random().toString(16).slice(2)}`;
+            sessionId = `guest_${randomPart}`;
+            localStorage.setItem('guest_session_id', sessionId);
+        }
+        return sessionId;
     }
 
     function formatPrice(price) {
