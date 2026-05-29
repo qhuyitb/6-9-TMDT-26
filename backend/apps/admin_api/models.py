@@ -9,7 +9,7 @@ class Order(models.Model):
     STATUS_CONFIRMED = 'confirmed'
     STATUS_PREPARING = 'preparing'
     STATUS_SHIPPING = 'shipping'
-    STATUS_COMPLETED = 'completed'
+    STATUS_COMPLETED = 'done'
     STATUS_CANCELLED = 'cancelled'
 
     STATUS_CHOICES = (
@@ -17,7 +17,7 @@ class Order(models.Model):
         (STATUS_CONFIRMED, 'Confirmed'),
         (STATUS_PREPARING, 'Preparing'),
         (STATUS_SHIPPING, 'Shipping'),
-        (STATUS_COMPLETED, 'Completed'),
+        (STATUS_COMPLETED, 'Done'),
         (STATUS_CANCELLED, 'Cancelled'),
     )
 

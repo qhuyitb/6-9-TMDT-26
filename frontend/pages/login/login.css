@@ -399,6 +399,36 @@ button {
   text-decoration: underline;
 }
 
+.auth-back-link {
+  align-self: center;
+  margin-top: 2px;
+}
+
+.auth-message {
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.auth-message.success {
+  background: #f0fff4;
+  border: 1px solid #b2dfdb;
+  color: #276749;
+}
+
+.auth-message.error {
+  background: #fff0f0;
+  border: 1px solid #fcc;
+  color: #c0151e;
+}
+
+.auth-message a {
+  color: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+}
+
 /* Primary button */
 .btn-primary {
   width: 100%;

@@ -1,6 +1,11 @@
 import re
 from rest_framework import serializers
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password as django_validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
 from .models import User, Cart, CartItem, UserAddress, Wishlist, WishlistItem
 
 
@@ -75,6 +80,48 @@ class LoginSerializer(serializers.Serializer):
 
         if user.status == 'inactive':
             raise serializers.ValidationError("Tài khoản chưa được kích hoạt.")
+
+        data['user'] = user
+        return data
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def get_user(self):
+        email = self.validated_data['email']
+        return User.objects.filter(email__iexact=email, status='active').first()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    password = serializers.CharField(write_only=True, min_length=8)
+    password_confirm = serializers.CharField(write_only=True, min_length=8)
+
+    def validate_password(self, value):
+        if not re.search(r'[A-Z]', value):
+            raise serializers.ValidationError("Mật khẩu phải chứa ít nhất 1 chữ in hoa.")
+
+        try:
+            django_validate_password(value)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(list(exc.messages))
+
+        return value
+
+    def validate(self, data):
+        if data['password'] != data['password_confirm']:
+            raise serializers.ValidationError({'password_confirm': 'Mật khẩu xác nhận không khớp.'})
+
+        try:
+            user_id = force_str(urlsafe_base64_decode(data['uid']))
+            user = User.objects.get(pk=user_id, status='active')
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            raise serializers.ValidationError({'token': 'Liên kết đặt lại mật khẩu không hợp lệ.'})
+
+        if not default_token_generator.check_token(user, data['token']):
+            raise serializers.ValidationError({'token': 'Liên kết đặt lại mật khẩu đã hết hạn hoặc không hợp lệ.'})
 
         data['user'] = user
         return data

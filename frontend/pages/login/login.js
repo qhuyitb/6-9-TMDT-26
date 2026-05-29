@@ -140,7 +140,7 @@ if (loginForm) {
         const res = await fetch(`${API_BASE}/auth/login/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password, guest_session_id: getGuestSessionId() })
         });
 
         const data = await res.json();
@@ -152,7 +152,7 @@ if (loginForm) {
             if (data.user && data.user.role === 'admin') {
                 window.location.href = '/admin-home/';
             } else {
-                window.location.href = '/shop/';
+                window.location.href = getSafeNextUrl() || '/shop/';
             }
         } else {
             alert('Đăng nhập thất bại');
@@ -199,4 +199,145 @@ if (registerFormApi) {
             alert(message || 'Đăng ký thất bại.');
         }
     });
+}
+
+function getGuestSessionId() {
+    let sessionId = localStorage.getItem('guest_session_id');
+    if (!sessionId) {
+        const randomPart = crypto.randomUUID
+            ? crypto.randomUUID().replace(/-/g, '')
+            : `${Date.now()}${Math.random().toString(16).slice(2)}`;
+        sessionId = `guest_${randomPart}`;
+        localStorage.setItem('guest_session_id', sessionId);
+    }
+    return sessionId;
+}
+
+function getSafeNextUrl() {
+    const next = new URLSearchParams(window.location.search).get('next');
+    if (!next || !next.startsWith('/') || next.startsWith('//')) {
+        return '';
+    }
+    return next;
+}
+
+const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+if (forgotPasswordForm) {
+    forgotPasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById('forgot-email').value.trim();
+        const button = forgotPasswordForm.querySelector('button[type="submit"]');
+        const oldText = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Đang gửi...';
+
+        try {
+            const res = await fetch(`${API_BASE}/auth/password-reset/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                showAuthMessage('forgotPasswordMessage', getApiMessage(data, 'Không thể gửi liên kết đặt lại mật khẩu.'), 'error');
+                return;
+            }
+
+            const debugLink = data.reset_url
+                ? `<br><a href="${data.reset_url}">Mở link đặt lại mật khẩu</a>`
+                : '';
+            showAuthMessage('forgotPasswordMessage', `${data.message || 'Vui lòng kiểm tra email của bạn.'}${debugLink}`, 'success');
+        } catch (error) {
+            showAuthMessage('forgotPasswordMessage', 'Không thể kết nối backend.', 'error');
+        } finally {
+            button.disabled = false;
+            button.textContent = oldText;
+        }
+    });
+}
+
+const resetPasswordForm = document.getElementById('resetPasswordForm');
+if (resetPasswordForm) {
+    resetPasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const resetData = getResetPathData();
+        if (!resetData) {
+            showAuthMessage('resetPasswordMessage', 'Liên kết đặt lại mật khẩu không hợp lệ.', 'error');
+            return;
+        }
+
+        const password = document.getElementById('reset-password').value;
+        const passwordConfirm = document.getElementById('reset-password-confirm').value;
+        if (password !== passwordConfirm) {
+            showAuthMessage('resetPasswordMessage', 'Mật khẩu xác nhận không khớp.', 'error');
+            return;
+        }
+
+        const button = resetPasswordForm.querySelector('button[type="submit"]');
+        const oldText = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Đang xử lý...';
+
+        try {
+            const res = await fetch(`${API_BASE}/auth/password-reset/confirm/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    uid: resetData.uid,
+                    token: resetData.token,
+                    password,
+                    password_confirm: passwordConfirm
+                })
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                showAuthMessage('resetPasswordMessage', getApiMessage(data, 'Không thể đặt lại mật khẩu.'), 'error');
+                return;
+            }
+
+            showAuthMessage('resetPasswordMessage', 'Đặt lại mật khẩu thành công. Bạn có thể đăng nhập bằng mật khẩu mới.', 'success');
+            resetPasswordForm.reset();
+        } catch (error) {
+            showAuthMessage('resetPasswordMessage', 'Không thể kết nối backend.', 'error');
+        } finally {
+            button.disabled = false;
+            button.textContent = oldText;
+        }
+    });
+}
+
+function getResetPathData() {
+    const parts = window.location.pathname.split('/').filter(Boolean);
+    const resetIndex = parts.indexOf('reset-password');
+    if (resetIndex === -1 || !parts[resetIndex + 1] || !parts[resetIndex + 2]) {
+        return null;
+    }
+
+    return {
+        uid: parts[resetIndex + 1],
+        token: parts[resetIndex + 2]
+    };
+}
+
+function showAuthMessage(elementId, message, type) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    element.hidden = false;
+    element.className = `auth-message ${type}`;
+    element.innerHTML = message;
+}
+
+function getApiMessage(data, fallback) {
+    if (!data || typeof data !== 'object') return fallback;
+    if (data.message) return data.message;
+    if (data.error) return data.error;
+    if (data.detail) return data.detail;
+
+    const values = Object.values(data).flat();
+    return values.length ? values.join('\n') : fallback;
 }

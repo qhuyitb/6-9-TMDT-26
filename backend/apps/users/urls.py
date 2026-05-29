@@ -2,6 +2,8 @@ from django.urls import path
 from .views import (
     PaymentDetailView,
     PaymentListView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
     RegisterView,
     LoginView,
     CartView,
@@ -19,6 +21,8 @@ from .views import (
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='api_register'),
     path('login/', LoginView.as_view(), name='api_login'),
+    path('password-reset/', PasswordResetRequestView.as_view(), name='api_password_reset'),
+    path('password-reset/confirm/', PasswordResetConfirmView.as_view(), name='api_password_reset_confirm'),
     path('cart/', CartView.as_view(), name='api_cart'),
     path('cart/items/', CartItemAddView.as_view(), name='api_cart_item_add'),
     path('cart/items/<int:item_id>/', CartItemUpdateView.as_view(), name='api_cart_item_update'),

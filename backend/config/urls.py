@@ -25,6 +25,8 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('login/', TemplateView.as_view(template_name='pages/login/login.html'), name='login_page'),
+    path('forgot-password/', TemplateView.as_view(template_name='pages/forgot-password/forgot-password.html'), name='forgot_password_page'),
+    path('reset-password/<str:uid>/<str:token>/', TemplateView.as_view(template_name='pages/reset-password/reset-password.html'), name='reset_password_page'),
     path('admin-login/', TemplateView.as_view(template_name='pages/admin-login/admin-login.html'), name='admin_login_page'),
     path('admin-home/', TemplateView.as_view(template_name='pages/admin-home/admin-home.html'), name='admin_home_page'),
     path('admin-customers/', TemplateView.as_view(template_name='pages/admin-customers/admin-customers.html'), name='admin_customers_page'),
@@ -37,6 +39,7 @@ urlpatterns = [
     path('admin-inventory/', TemplateView.as_view(template_name='pages/admin-inventory/admin-inventory.html'), name='admin_inventory_page'),
     path('shop/', TemplateView.as_view(template_name='pages/shop/shop.html'), name='shop_page'),
     path('cart/', TemplateView.as_view(template_name='pages/cart/cart.html'), name='cart_page'),
+    path('products/wishlist/', TemplateView.as_view(template_name='pages/wishlist/wishlist.html'), name='wishlist_page'),
     path('orders/', TemplateView.as_view(template_name='pages/orders/orders.html'), name='orders_page'),
     path('api/auth/', include('apps.users.urls')),
     path('api/', include('apps.products.urls')),

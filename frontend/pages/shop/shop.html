@@ -59,12 +59,47 @@
         justify-content: center;
         color: var(--text-light);
         font-size: 2rem;
+        position: relative;
     }
 
     .shop-thumb img {
         width: 100%;
         height: 100%;
         object-fit: cover;
+    }
+
+    .wishlist-btn {
+        width: 38px;
+        height: 38px;
+        border: 1px solid rgba(229, 57, 53, .18);
+        border-radius: 50%;
+        background: rgba(255, 255, 255, .92);
+        color: var(--primary);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        transition: background var(--transition), color var(--transition), transform var(--transition);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .wishlist-btn:hover {
+        transform: translateY(-1px);
+        background: var(--white);
+    }
+
+    .wishlist-btn.active {
+        background: var(--primary);
+        color: var(--white);
+    }
+
+    .wishlist-btn:disabled {
+        cursor: wait;
+        opacity: .72;
+        transform: none;
     }
 
     .shop-card-body {
@@ -154,9 +189,11 @@
 {% block extra_js %}
 <script>
     const SHOP_API_BASE = 'http://127.0.0.1:8000/api';
+    let wishlistProductIds = new Set();
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         syncHeaderSearch();
+        await loadWishlistSummary();
         loadShopProducts();
         loadCartSummary();
     });
@@ -217,7 +254,17 @@
 
         return `
             <article class="shop-card">
-                <div class="shop-thumb">${image}</div>
+                <div class="shop-thumb">
+                    ${image}
+                    <button class="wishlist-btn ${wishlistProductIds.has(product.id) ? 'active' : ''}"
+                        type="button"
+                        title="${wishlistProductIds.has(product.id) ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}"
+                        aria-label="${wishlistProductIds.has(product.id) ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}"
+                        aria-pressed="${wishlistProductIds.has(product.id)}"
+                        onclick="toggleWishlist(event, ${product.id})">
+                        <svg width="19" height="19" viewBox="0 0 24 24" fill="${wishlistProductIds.has(product.id) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    </button>
+                </div>
                 <div class="shop-card-body">
                     <div class="product-name">${escapeHtml(product.name)}</div>
                     <div class="product-meta">${escapeHtml(product.brand)} - Còn ${product.stock_quantity}</div>
@@ -230,21 +277,85 @@
         `;
     }
 
-    async function addToCart(productId) {
-        const token = getAccessToken();
-        if (!token) {
-            alert('Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng.');
-            window.location.href = '/login/';
-            return;
-        }
+    async function loadWishlistSummary() {
+        try {
+            const res = await fetch(`${SHOP_API_BASE}/auth/wishlist/`, {
+                headers: getCustomerHeaders()
+            });
+            if (!res.ok) {
+                wishlistProductIds = new Set();
+                return;
+            }
 
+            const data = await res.json();
+            syncWishlistState(data.items || []);
+        } catch (error) {
+            wishlistProductIds = new Set();
+        }
+    }
+
+    async function toggleWishlist(event, productId) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const button = event.currentTarget;
+        const isFavorite = wishlistProductIds.has(productId);
+        button.disabled = true;
+
+        try {
+            const res = await fetch(`${SHOP_API_BASE}/auth/wishlist/items/${isFavorite ? productId + '/' : ''}`, {
+                method: isFavorite ? 'DELETE' : 'POST',
+                headers: getCustomerHeaders(true),
+                body: isFavorite ? undefined : JSON.stringify({ product_id: productId })
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                alert(data.error || 'Không thể cập nhật danh sách yêu thích.');
+                return;
+            }
+
+            if (Array.isArray(data.items)) {
+                syncWishlistState(data.items);
+            } else if (isFavorite) {
+                wishlistProductIds.delete(productId);
+            } else {
+                wishlistProductIds.add(productId);
+            }
+
+            updateWishlistButtons();
+        } catch (error) {
+            alert('Không thể kết nối backend.');
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    function syncWishlistState(items) {
+        wishlistProductIds = new Set(items.map(item => Number(item.product_id)));
+    }
+
+    function updateWishlistButtons() {
+        document.querySelectorAll('.wishlist-btn').forEach(button => {
+            const match = button.getAttribute('onclick')?.match(/toggleWishlist\(event,\s*(\d+)\)/);
+            if (!match) return;
+
+            const productId = Number(match[1]);
+            const isFavorite = wishlistProductIds.has(productId);
+            button.classList.toggle('active', isFavorite);
+            button.setAttribute('aria-pressed', String(isFavorite));
+            button.setAttribute('title', isFavorite ? 'Bỏ yêu thích' : 'Thêm vào yêu thích');
+            button.setAttribute('aria-label', isFavorite ? 'Bỏ yêu thích' : 'Thêm vào yêu thích');
+            const icon = button.querySelector('svg');
+            if (icon) icon.setAttribute('fill', isFavorite ? 'currentColor' : 'none');
+        });
+    }
+
+    async function addToCart(productId) {
         try {
             const res = await fetch(`${SHOP_API_BASE}/auth/cart/items/`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: getCustomerHeaders(true),
                 body: JSON.stringify({ product_id: productId, quantity: 1 })
             });
             const data = await res.json();
@@ -261,15 +372,9 @@
     }
 
     async function loadCartSummary() {
-        const token = getAccessToken();
-        if (!token) {
-            updateCartUi(0);
-            return;
-        }
-
         try {
             const res = await fetch(`${SHOP_API_BASE}/auth/cart/`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: getCustomerHeaders()
             });
             if (!res.ok) {
                 updateCartUi(0);
@@ -297,6 +402,31 @@
 
     function getAccessToken() {
         return localStorage.getItem('access_token') || '';
+    }
+
+    function getCustomerHeaders(includeJson = false) {
+        const headers = {};
+        if (includeJson) headers['Content-Type'] = 'application/json';
+
+        const token = getAccessToken();
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        } else {
+            headers['X-Guest-Session'] = getGuestSessionId();
+        }
+        return headers;
+    }
+
+    function getGuestSessionId() {
+        let sessionId = localStorage.getItem('guest_session_id');
+        if (!sessionId) {
+            const randomPart = crypto.randomUUID
+                ? crypto.randomUUID().replace(/-/g, '')
+                : `${Date.now()}${Math.random().toString(16).slice(2)}`;
+            sessionId = `guest_${randomPart}`;
+            localStorage.setItem('guest_session_id', sessionId);
+        }
+        return sessionId;
     }
 
     function formatPrice(price) {
