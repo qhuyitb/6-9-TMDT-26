@@ -181,3 +181,36 @@ VNPAY_FRONTEND_RETURN_URL = env(
 )
 VNPAY_EXPIRE_MINUTES = env.int('VNPAY_EXPIRE_MINUTES', default=15)
 VNPAY_CONFIRM_ON_RETURN = env.bool('VNPAY_CONFIRM_ON_RETURN', default=False)
+
+LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'vnpay_ipn_file': {
+            'class': 'logging.FileHandler',
+            'filename': LOG_DIR / 'vnpay_ipn.log',
+            'formatter': 'verbose',
+            'encoding': 'utf-8',
+        },
+    },
+    'loggers': {
+        'payments.vnpay.ipn': {
+            'handlers': ['console', 'vnpay_ipn_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
