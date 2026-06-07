@@ -521,8 +521,21 @@
         products = Object.values(data).find(v => Array.isArray(v)) || [];
       }
 
-      // Normalize rank field
-      products = products.map((p, i) => ({ rank: i + 1, ...p }));
+      // Normalize fields coming from API to the shape the UI expects
+      products = products.map((p, i) => ({
+        rank: i + 1,
+        id: p.product_id || p.id || null,
+        product_id: p.product_id || p.id || null,
+        name: p.product__name || p.name || 'N/A',
+        category: p.product__category__name || p.category_name || p.category || '—',
+        quantity_sold: Number(p.total_quantity || p.quantity_sold || 0),
+        revenue: Number(p.total_revenue || p.revenue || 0),
+        rating: p.rating != null ? Number(p.rating) : null,
+        trend: p.trend != null ? Number(p.trend) : null,
+        stock: p.stock != null ? Number(p.stock) : (p.stock_quantity != null ? Number(p.stock_quantity) : null),
+        // keep other raw fields for debugging
+        _raw: p,
+      }));
 
       allProducts = products;
       filteredProducts = [...allProducts];
