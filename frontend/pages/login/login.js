@@ -161,6 +161,19 @@ if (loginForm) {
 }
 const registerFormApi = document.getElementById('registerForm');
 
+function normalizePhoneNumber(phone) {
+    const digits = String(phone || '').trim().replace(/\D/g, '');
+    if (!digits) {
+        return '';
+    }
+
+    return digits;
+}
+
+function isValidVietnamPhone(phone) {
+    return /^0[35789]\d{8}$/.test(normalizePhoneNumber(phone));
+}
+
 if (registerFormApi) {
     registerFormApi.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -170,9 +183,15 @@ if (registerFormApi) {
         const phone = document.getElementById('reg-phone').value.trim();
         const password1 = document.getElementById('reg-password').value;
         const password2 = document.getElementById('reg-password2').value;
+        const normalizedPhone = normalizePhoneNumber(phone);
 
         if (password1 !== password2) {
             alert('Mật khẩu xác nhận không khớp.');
+            return;
+        }
+
+        if (!isValidVietnamPhone(normalizedPhone)) {
+            alert('Số điện thoại không hợp lệ. Vui lòng nhập số nội địa hợp lệ, ví dụ 0912345678.');
             return;
         }
 
@@ -184,7 +203,7 @@ if (registerFormApi) {
             body: JSON.stringify({
                 full_name: fullName,
                 email: email,
-                phone: phone,
+                phone: normalizedPhone,
                 password: password1
             })
         });

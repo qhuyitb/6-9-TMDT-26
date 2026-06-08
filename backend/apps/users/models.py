@@ -1,7 +1,35 @@
+import re
+
+from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Q
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from apps.products.models import Product
+
+
+PHONE_ERROR_MESSAGE = 'Số điện thoại phải là số nội địa hợp lệ, ví dụ 0912345678.'
+PHONE_PATTERN = r'^0[35789]\d{8}$'
+PHONE_INPUT_PATTERN = r'^0[35789]\d{8}$'
+PHONE_VALIDATOR = RegexValidator(regex=PHONE_INPUT_PATTERN, message=PHONE_ERROR_MESSAGE)
+
+
+def normalize_phone_number(value):
+    phone = re.sub(r'[^\d+]', '', str(value or '').strip())
+    if not phone:
+        return ''
+
+    if phone.startswith('+'):
+        phone = phone[1:]
+
+    return phone
+
+
+def validate_phone_number(value):
+    phone = normalize_phone_number(value)
+    if not re.fullmatch(PHONE_PATTERN, phone):
+        raise ValidationError(PHONE_ERROR_MESSAGE)
+    return phone
 
 
 class UserManager(BaseUserManager):
@@ -15,6 +43,7 @@ class UserManager(BaseUserManager):
             raise ValueError('Số điện thoại là bắt buộc')
 
         email = self.normalize_email(email)
+        phone = validate_phone_number(phone)
         user = self.model(email=email, phone=phone, full_name=full_name, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -51,7 +80,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     password = models.CharField(max_length=255, db_column='password_hash')
     full_name = models.CharField(max_length=150)
     email = models.EmailField(max_length=150, unique=True)
-    phone = models.CharField(max_length=20, unique=True)
+    phone = models.CharField(max_length=10, unique=True, validators=[PHONE_VALIDATOR])
     avatar_url = models.CharField(max_length=255, null=True, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='customer')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
@@ -67,6 +96,10 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     class Meta:
         db_table = 'users'
+
+    def save(self, *args, **kwargs):
+        self.phone = validate_phone_number(self.phone)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.email
@@ -121,7 +154,7 @@ class CartItem(models.Model):
 class UserAddress(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='addresses')
     receiver_name = models.CharField(max_length=150)
-    receiver_phone = models.CharField(max_length=20)
+    receiver_phone = models.CharField(max_length=10, validators=[PHONE_VALIDATOR])
     line1 = models.CharField(max_length=255)
     ward = models.CharField(max_length=100)
     district = models.CharField(max_length=100)
@@ -132,6 +165,10 @@ class UserAddress(models.Model):
 
     class Meta:
         db_table = 'user_addresses'
+
+    def save(self, *args, **kwargs):
+        self.receiver_phone = validate_phone_number(self.receiver_phone)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.user.email} - {self.line1}'

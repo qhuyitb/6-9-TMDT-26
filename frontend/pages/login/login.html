@@ -104,10 +104,12 @@ nhập – TechShop{% endblock %} {% block extra_css %}
         <div class="form-group">
           <label for="reg-phone">Số điện thoại</label>
           <input
-            type="text"
+            type="tel"
             id="reg-phone"
             name="phone"
-            placeholder="Nhập số điện thoại"
+            autocomplete="tel"
+            inputmode="tel"
+            placeholder="0912345678"
             required
           />
         </div>
