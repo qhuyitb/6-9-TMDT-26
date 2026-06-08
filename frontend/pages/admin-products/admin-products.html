@@ -158,15 +158,101 @@
   .loading-row td { text-align: center; padding: 40px !important; color: var(--text-sub); font-size: 14px; }
   .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 8px; vertical-align: middle; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  /* ─── HAMBURGER ─────────────────────────────────────────── */
+.hamburger {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 200;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--sidebar-bg);
+  border: none;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
+}
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 99;
+}
+.sidebar-close {
+  display: none;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #1e293b;
+  border: none;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 15px;
+}
+/* ─── RESPONSIVE ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hamburger { display: flex; }
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 150;
+    width: 220px;
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar.open .sidebar-close { display: flex; }
+  .sidebar-overlay.open { display: block; }
+  .main { margin-left: 0; }
+  .topbar { padding: 0 12px 0 56px; height: 52px; }
+  .topbar-left strong { font-size: 13px; }
+  .page-content { padding: 12px; }
+  .page-title { font-size: 16px; }
+  .page-header { flex-direction: column; gap: 12px; }
+  .page-header .btn-primary-custom { width: 100%; justify-content: center; }
+  .filter-bar { flex-direction: column; gap: 8px; padding: 12px; }
+  .filter-bar input,
+  .filter-bar select,
+  .filter-bar .btn-filter { width: 100%; }
+  .table-card-header { padding: 12px 14px; }
+  table { display: block; overflow-x: auto; white-space: nowrap; font-size: 12px; }
+  thead th, tbody td { padding: 8px 12px; }
+  .pagination-bar { flex-direction: column; gap: 8px; align-items: flex-start; padding: 12px 14px; }
+  .modal-box { width: 95vw; }
+  .modal-header { padding: 16px 16px; }
+  .modal-body { padding: 14px 16px; }
+  .modal-footer { padding: 12px 16px; }
+  .form-row { grid-template-columns: 1fr; }
+  .form-row.three { grid-template-columns: 1fr; }
+  .delete-modal-box { width: 95vw; padding: 20px 16px; }
+}
+@media (max-width: 480px) {
+  .topbar-left span { display: none; }
+}
 </style>
 </head>
 <body>
 
 <!-- SIDEBAR -->
+<button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()">
+  <i class="bi bi-list"></i>
+</button>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 <aside class="sidebar">
   <div class="sidebar-logo">
     <div class="logo-icon"><i class="bi bi-cpu"></i></div>
     <div><span>TechShop</span><small>Admin Panel</small></div>
+    <button class="sidebar-close" onclick="toggleSidebar()">
+      <i class="bi bi-x"></i>
+    </button>
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section-label">Tổng quan</div>
@@ -647,6 +733,15 @@
     accessToken = token;
     localStorage.setItem('access_token', token);
   }
+  // ─── HAMBURGER ────────────────────────────────────────────
+function toggleSidebar() {
+  const sidebar   = document.querySelector('.sidebar');
+  const overlay   = document.getElementById('sidebarOverlay');
+  const hamburger = document.getElementById('hamburgerBtn');
+  const isOpen    = sidebar.classList.toggle('open');
+  overlay.classList.toggle('open', isOpen);
+  hamburger.style.display = isOpen ? 'none' : 'flex';
+}
 </script>
 </body>
 </html>
