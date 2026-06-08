@@ -1,4 +1,5 @@
 import json
+import logging
 import uuid
 from urllib.parse import urlencode
 
@@ -19,6 +20,9 @@ from .vnpay import (
     is_configured as vnpay_is_configured,
     validate_response as validate_vnpay_response,
 )
+
+
+ipn_logger = logging.getLogger('payments.vnpay.ipn')
 
 
 class OrderListCreateView(APIView):
@@ -268,7 +272,38 @@ class VNPayIPNView(APIView):
     authentication_classes = []
 
     def get(self, request):
-        result = handle_vnpay_ipn(dict(request.GET.items()))
+        params = dict(request.GET.items())
+        masked_params = mask_vnpay_log_params(params)
+        ipn_logger.info(
+            'VNPay IPN received path=%s remote_addr=%s params=%s',
+            request.path,
+            get_request_ip(request),
+            masked_params,
+        )
+
+        try:
+            result = handle_vnpay_ipn(params)
+        except Exception:
+            ipn_logger.exception(
+                'VNPay IPN unhandled exception remote_addr=%s params=%s',
+                get_request_ip(request),
+                masked_params,
+            )
+            result = {
+                'ok': False,
+                'payment_result': 'failed',
+                'order_id': '',
+                'rsp_code': '99',
+                'message': 'Unknown error',
+            }
+
+        ipn_logger.info(
+            'VNPay IPN response rsp_code=%s message=%s order_id=%s payment_result=%s',
+            result.get('rsp_code'),
+            result.get('message'),
+            result.get('order_id'),
+            result.get('payment_result'),
+        )
         return Response({
             'RspCode': result['rsp_code'],
             'Message': result['message'],
@@ -332,13 +367,22 @@ def inspect_vnpay_return(params):
 
 
 def handle_vnpay_ipn(params, source='ipn'):
+    if not params:
+        return {
+            'ok': False,
+            'payment_result': 'failed',
+            'order_id': '',
+            'rsp_code': '99',
+            'message': 'Input data required',
+        }
+
     if not validate_vnpay_response(params):
         return {
             'ok': False,
             'payment_result': 'failed',
             'order_id': '',
             'rsp_code': '97',
-            'message': 'Invalid checksum',
+            'message': 'Invalid signature',
         }
 
     txn_ref = params.get('vnp_TxnRef', '')
@@ -372,13 +416,13 @@ def handle_vnpay_ipn(params, source='ipn'):
                     'message': 'Invalid amount',
                 }
 
-            if payment.status == Payment.STATUS_SUCCESS:
+            if payment.status != Payment.STATUS_PENDING:
                 return {
-                    'ok': True,
-                    'payment_result': 'success',
+                    'ok': payment.status == Payment.STATUS_SUCCESS,
+                    'payment_result': 'success' if payment.status == Payment.STATUS_SUCCESS else 'failed',
                     'order_id': order.id,
-                    'rsp_code': '00',
-                    'message': 'Confirm Success',
+                    'rsp_code': '02',
+                    'message': 'Order already confirmed',
                 }
 
             if response_code == '00' and transaction_status == '00':
@@ -434,6 +478,21 @@ def handle_vnpay_ipn(params, source='ipn'):
             'rsp_code': '99',
             'message': 'Unknown error',
         }
+
+
+def get_request_ip(request):
+    forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if forwarded_for:
+        return forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', '')
+
+
+def mask_vnpay_log_params(params):
+    masked = dict(params)
+    secure_hash = masked.get('vnp_SecureHash')
+    if secure_hash:
+        masked['vnp_SecureHash'] = f'{secure_hash[:8]}...{secure_hash[-8:]}'
+    return masked
 
 
 def build_frontend_result_url(result):

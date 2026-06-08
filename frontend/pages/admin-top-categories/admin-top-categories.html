@@ -457,7 +457,18 @@
 
       const data = await res.json();
       // Expect: { categories: [ { name, revenue, order_count, product_count, growth_rate, icon? }, ... ], revenue_growth? }
-      const cats = data.categories || data;  // fallback nếu API trả thẳng mảng
+      const rawCats = data.categories || data;  // fallback nếu API trả thẳng mảng
+
+      // Normalize API fields to the shape UI expects
+      const cats = (Array.isArray(rawCats) ? rawCats : []).map((c, i) => ({
+        name: c.product__category__name || c.name || c.product__category_name || 'Unknown',
+        revenue: Number(c.total_revenue || c.revenue || 0),
+        order_count: Number(c.total_quantity || c.order_count || 0),
+        product_count: Number(c.product_count || 0),
+        growth_rate: c.growth_rate != null ? Number(c.growth_rate) : null,
+        icon: c.icon || 'bi-tag',
+        _raw: c,
+      }));
 
       renderStats({ categories: cats, revenue_growth: data.revenue_growth });
       renderBars(cats);

@@ -221,9 +221,9 @@
         <div class="chart-wrap"><canvas id="revenueChart"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Top danh mục bán chạy</div>
-        <div class="chart-sub">Theo số lượng sản phẩm bán ra</div>
-        <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+        <div class="chart-title">Top sản phẩm bán chạy</div>
+        <div class="chart-sub">Theo số lượng bán ra của từng sản phẩm</div>
+        <div class="chart-wrap"><canvas id="productChart"></canvas></div>
       </div>
     </div>
 
@@ -317,18 +317,18 @@
     }
   }
 
-  // ─── LOAD TOP CATEGORIES CHART ───────────────────────────
-  let categoryChartInst = null;
-  async function loadCategoryChart() {
+  // ─── LOAD TOP PRODUCTS CHART ─────────────────────────────
+  let productChartInst = null;
+  async function loadProductChart() {
     try {
-      const res  = await fetch('/api/admin/top-categories/?limit=6' + (getDateParams() ? '&' + getDateParams().slice(1) : ''), { headers: authHeaders() });
+      const res  = await fetch('/api/admin/top-products/?limit=6' + (getDateParams() ? '&' + getDateParams().slice(1) : ''), { headers: authHeaders() });
       const data = await res.json();
-      const labels = data.map(d => d.product__category__name || 'N/A');
+      const labels = data.map(d => d.product__name || 'N/A');
       const values = data.map(d => safeNumber(d.total_quantity));
       const colors = ['#1a56db','#10b981','#f59e0b','#8b5cf6','#f97316','#ef4444'];
 
-      if (categoryChartInst) categoryChartInst.destroy();
-      categoryChartInst = new Chart(document.getElementById('categoryChart'), {
+      if (productChartInst) productChartInst.destroy();
+      productChartInst = new Chart(document.getElementById('productChart'), {
         type: 'doughnut',
         data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }] },
         options: {
@@ -473,7 +473,7 @@
   function loadAll() {
     loadSummary();
     loadRevenueChart();
-    loadCategoryChart();
+    loadProductChart();
     loadLowStock();
   }
 

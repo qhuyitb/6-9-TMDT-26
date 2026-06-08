@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
-from .models import User, Cart, CartItem, UserAddress, Wishlist, WishlistItem
+from .models import User, Cart, CartItem, UserAddress, Wishlist, WishlistItem, validate_phone_number
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -19,7 +19,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8, error_messages={
         'min_length': 'Mật khẩu phải có ít nhất 8 ký tự.'
     })
-
+    phone = serializers.CharField()
     class Meta:
         model = User
         fields = ('full_name', 'email', 'phone', 'password')
@@ -41,6 +41,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         if not re.search(r'[A-Z]', value):
             raise serializers.ValidationError("Mật khẩu phải chứa ít nhất 1 chữ in hoa.")
         return value
+
+    def validate_phone(self, value):
+        try:
+            return validate_phone_number(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message)
 
     def create(self, validated_data):
         """Tạo user mới với mật khẩu đã được băm."""
@@ -169,6 +175,7 @@ class CartSerializer(serializers.ModelSerializer):
     def get_total_price(self, obj):
         return sum(item.unit_price * item.quantity for item in obj.items.all())
 
+
 # ============================================================
 # USER ADDRESSES
 # ============================================================
@@ -183,9 +190,10 @@ class UserAddressSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
     def validate_receiver_phone(self, value):
-        if not re.match(r'^\+?[0-9]{9,15}$', value):
-            raise serializers.ValidationError("Số điện thoại không hợp lệ.")
-        return value
+        try:
+            return validate_phone_number(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message)
 
 
 # ============================================================
@@ -222,5 +230,3 @@ class WishlistSerializer(serializers.ModelSerializer):
 
     def get_total_items(self, obj):
         return obj.items.count()
-
-

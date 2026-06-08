@@ -236,6 +236,157 @@
         margin-bottom: 16px;
     }
 
+    .checkout-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(15, 23, 42, .48);
+    }
+
+    .checkout-modal.is-open {
+        display: flex;
+    }
+
+    .checkout-modal-box {
+        width: min(620px, 100%);
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+        background: var(--white);
+        border-radius: var(--radius);
+        box-shadow: 0 24px 70px rgba(15, 23, 42, .22);
+    }
+
+    .checkout-modal-header,
+    .checkout-modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .checkout-modal-footer {
+        justify-content: flex-end;
+        border-top: 1px solid var(--border);
+        border-bottom: none;
+    }
+
+    .checkout-modal-title {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--text-dark);
+        margin: 0;
+    }
+
+    .checkout-modal-close {
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--white);
+        color: var(--text-mid);
+        cursor: pointer;
+        font-size: 1.3rem;
+        line-height: 1;
+    }
+
+    .address-form {
+        display: grid;
+        gap: 14px;
+        padding: 20px;
+    }
+
+    .address-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .address-field {
+        display: grid;
+        gap: 7px;
+    }
+
+    .address-field.full {
+        grid-column: 1 / -1;
+    }
+
+    .address-field label,
+    .default-address-row {
+        font-weight: 700;
+        color: var(--text-dark);
+        font-size: .92rem;
+    }
+
+    .address-field input {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 11px 12px;
+        color: var(--text-dark);
+        font: inherit;
+        outline: none;
+    }
+
+    .address-field input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(229, 57, 53, .10);
+    }
+
+    .default-address-row {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+    .default-address-row input {
+        accent-color: var(--primary);
+    }
+
+    .address-error {
+        display: none;
+        padding: 10px 12px;
+        border-radius: var(--radius);
+        background: #fef2f2;
+        color: #b91c1c;
+        font-weight: 700;
+        line-height: 1.4;
+    }
+
+    .address-error.is-visible {
+        display: block;
+    }
+
+    .modal-secondary-btn,
+    .modal-primary-btn {
+        border-radius: var(--radius);
+        padding: 11px 16px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .modal-secondary-btn {
+        border: 1px solid var(--border);
+        background: var(--white);
+        color: var(--text-dark);
+    }
+
+    .modal-primary-btn {
+        border: none;
+        background: var(--primary);
+        color: var(--white);
+    }
+
+    .modal-primary-btn:disabled {
+        opacity: .65;
+        cursor: not-allowed;
+    }
+
     @media (max-width: 860px) {
         .cart-layout {
             grid-template-columns: 1fr;
@@ -257,6 +408,10 @@
         .line-total {
             text-align: left;
         }
+
+        .address-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 {% endblock %}
@@ -271,14 +426,70 @@
         <div class="empty-cart">Đang tải giỏ hàng...</div>
     </div>
 </section>
+
+<div class="checkout-modal" id="checkoutAddressModal" aria-hidden="true">
+    <div class="checkout-modal-box" role="dialog" aria-modal="true" aria-labelledby="checkoutAddressTitle">
+        <div class="checkout-modal-header">
+            <h2 class="checkout-modal-title" id="checkoutAddressTitle">Thông tin giao hàng</h2>
+            <button class="checkout-modal-close" type="button" onclick="closeAddressModal()" aria-label="Đóng">&times;</button>
+        </div>
+        <form id="checkoutAddressForm" class="address-form">
+            <div class="address-error" id="checkoutAddressError"></div>
+            <div class="address-grid">
+                <div class="address-field">
+                    <label for="receiverName">Họ tên người nhận</label>
+                    <input id="receiverName" name="receiver_name" autocomplete="name" required>
+                </div>
+                <div class="address-field">
+                    <label for="receiverPhone">Số điện thoại</label>
+                    <input id="receiverPhone" name="receiver_phone" autocomplete="tel" inputmode="tel" required>
+                </div>
+                <div class="address-field full">
+                    <label for="addressLine1">Địa chỉ cụ thể</label>
+                    <input id="addressLine1" name="line1" autocomplete="street-address" required>
+                </div>
+                <div class="address-field">
+                    <label for="addressWard">Phường/Xã</label>
+                    <input id="addressWard" name="ward" required>
+                </div>
+                <div class="address-field">
+                    <label for="addressDistrict">Quận/Huyện</label>
+                    <input id="addressDistrict" name="district" required>
+                </div>
+                <div class="address-field">
+                    <label for="addressCity">Tỉnh/Thành phố</label>
+                    <input id="addressCity" name="city" autocomplete="address-level1" required>
+                </div>
+                <div class="address-field">
+                    <label for="addressPostalCode">Mã bưu chính</label>
+                    <input id="addressPostalCode" name="postal_code" autocomplete="postal-code">
+                </div>
+            </div>
+            <label class="default-address-row">
+                <input id="addressIsDefault" name="is_default" type="checkbox" checked>
+                <span>Đặt làm địa chỉ mặc định</span>
+            </label>
+        </form>
+        <div class="checkout-modal-footer">
+            <button class="modal-secondary-btn" type="button" onclick="closeAddressModal()">Hủy</button>
+            <button class="modal-primary-btn" type="submit" form="checkoutAddressForm" id="confirmCheckoutBtn">Xác nhận thanh toán</button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
     const CART_API_BASE = 'http://127.0.0.1:8000/api';
+    let checkoutTriggerButton = null;
+    let checkoutAddressSnapshot = null;
 
     document.addEventListener('DOMContentLoaded', () => {
         loadCart();
+        const addressForm = document.getElementById('checkoutAddressForm');
+        if (addressForm) {
+            addressForm.addEventListener('submit', submitCheckoutAddress);
+        }
     });
 
     async function loadCart() {
@@ -432,51 +643,123 @@
             return;
         }
 
-        const oldText = button.textContent;
-        button.disabled = true;
-        button.textContent = 'Đang xử lý...';
+        checkoutTriggerButton = button;
+        await openAddressModal(token);
+    }
+
+    async function openAddressModal(token) {
+        const modal = document.getElementById('checkoutAddressModal');
+        const form = document.getElementById('checkoutAddressForm');
+        const errorBox = document.getElementById('checkoutAddressError');
+        checkoutAddressSnapshot = null;
+        form.reset();
+        document.getElementById('addressIsDefault').checked = true;
+        hideAddressError();
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.getElementById('receiverName').focus();
 
         try {
-            const paymentMethod = getSelectedPaymentMethod();
             const address = await getCheckoutAddress(token);
-            const payload = {
-                payment_method: paymentMethod,
-                shipping_method: 'standard',
-                shipping_fee: 0,
-                note: ''
-            };
             if (address) {
-                payload.address_id = address.id;
+                fillAddressForm(address);
+                checkoutAddressSnapshot = normalizeAddressPayload(readAddressForm(), address.id);
             }
-
-            const res = await fetch(`${CART_API_BASE}/orders/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-
-            if (!res.ok) {
-                alert(data.error || data.detail || 'Không thể tạo đơn hàng.');
-                return;
-            }
-
-            updateHeaderBadge(0);
-            if (paymentMethod === 'vnpay' && data.payment_url) {
-                window.location.href = data.payment_url;
-                return;
-            }
-
-            window.location.href = `/orders/?created=${encodeURIComponent(data.id)}`;
         } catch (error) {
-            alert('Không thể kết nối backend.');
-        } finally {
-            button.disabled = false;
-            button.textContent = oldText;
+            errorBox.textContent = 'Không thể tải địa chỉ đã lưu. Bạn vẫn có thể nhập địa chỉ mới.';
+            errorBox.classList.add('is-visible');
         }
+    }
+
+    function closeAddressModal() {
+        const modal = document.getElementById('checkoutAddressModal');
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        hideAddressError();
+    }
+
+    async function submitCheckoutAddress(event) {
+        event.preventDefault();
+        const token = getAccessToken();
+        if (!token) {
+            closeAddressModal();
+            window.location.href = '/login/?next=/cart/';
+            return;
+        }
+
+        const confirmButton = document.getElementById('confirmCheckoutBtn');
+        const oldText = confirmButton.textContent;
+        confirmButton.disabled = true;
+        confirmButton.textContent = 'Đang xử lý...';
+        if (checkoutTriggerButton) checkoutTriggerButton.disabled = true;
+
+        try {
+            const address = await saveCheckoutAddress(token);
+            await placeOrder(token, address.id);
+        } catch (error) {
+            showAddressError(error.message || 'Không thể tạo đơn hàng.');
+        } finally {
+            confirmButton.disabled = false;
+            confirmButton.textContent = oldText;
+            if (checkoutTriggerButton) checkoutTriggerButton.disabled = false;
+        }
+    }
+
+    async function saveCheckoutAddress(token) {
+        const payload = readAddressForm();
+        const normalizedPayload = normalizeAddressPayload(payload);
+        if (checkoutAddressSnapshot && addressesMatch(checkoutAddressSnapshot, normalizedPayload)) {
+            return { id: checkoutAddressSnapshot.id };
+        }
+
+        const res = await fetch(`${CART_API_BASE}/auth/addresses/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(getApiErrorMessage(data, 'Không thể lưu địa chỉ giao hàng.'));
+        }
+
+        return data;
+    }
+
+    async function placeOrder(token, addressId) {
+        const paymentMethod = getSelectedPaymentMethod();
+        const payload = {
+            payment_method: paymentMethod,
+            shipping_method: 'standard',
+            shipping_fee: 0,
+            note: '',
+            address_id: addressId
+        };
+
+        const res = await fetch(`${CART_API_BASE}/orders/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(getApiErrorMessage(data, 'Không thể tạo đơn hàng.'));
+        }
+
+        updateHeaderBadge(0);
+        if (paymentMethod === 'vnpay' && data.payment_url) {
+            window.location.href = data.payment_url;
+            return;
+        }
+
+        window.location.href = `/orders/?created=${encodeURIComponent(data.id)}`;
     }
 
     function getSelectedPaymentMethod() {
@@ -495,6 +778,80 @@
         }
 
         return null;
+    }
+
+    function fillAddressForm(address) {
+        document.getElementById('receiverName').value = address.receiver_name || '';
+        document.getElementById('receiverPhone').value = address.receiver_phone || '';
+        document.getElementById('addressLine1').value = address.line1 || '';
+        document.getElementById('addressWard').value = address.ward || '';
+        document.getElementById('addressDistrict').value = address.district || '';
+        document.getElementById('addressCity').value = address.city || '';
+        document.getElementById('addressPostalCode').value = address.postal_code || '';
+        document.getElementById('addressIsDefault').checked = Boolean(address.is_default);
+    }
+
+    function readAddressForm() {
+        const form = document.getElementById('checkoutAddressForm');
+        const formData = new FormData(form);
+        return {
+            receiver_name: String(formData.get('receiver_name') || '').trim(),
+            receiver_phone: String(formData.get('receiver_phone') || '').trim(),
+            line1: String(formData.get('line1') || '').trim(),
+            ward: String(formData.get('ward') || '').trim(),
+            district: String(formData.get('district') || '').trim(),
+            city: String(formData.get('city') || '').trim(),
+            postal_code: String(formData.get('postal_code') || '').trim(),
+            is_default: formData.get('is_default') === 'on'
+        };
+    }
+
+    function normalizeAddressPayload(address, id = null) {
+        return {
+            id,
+            receiver_name: address.receiver_name,
+            receiver_phone: address.receiver_phone,
+            line1: address.line1,
+            ward: address.ward,
+            district: address.district,
+            city: address.city,
+            postal_code: address.postal_code || '',
+            is_default: Boolean(address.is_default)
+        };
+    }
+
+    function addressesMatch(a, b) {
+        return a.receiver_name === b.receiver_name
+            && a.receiver_phone === b.receiver_phone
+            && a.line1 === b.line1
+            && a.ward === b.ward
+            && a.district === b.district
+            && a.city === b.city
+            && a.postal_code === b.postal_code
+            && a.is_default === b.is_default;
+    }
+
+    function showAddressError(message) {
+        const errorBox = document.getElementById('checkoutAddressError');
+        errorBox.textContent = message;
+        errorBox.classList.add('is-visible');
+    }
+
+    function hideAddressError() {
+        const errorBox = document.getElementById('checkoutAddressError');
+        errorBox.textContent = '';
+        errorBox.classList.remove('is-visible');
+    }
+
+    function getApiErrorMessage(data, fallback) {
+        if (!data) return fallback;
+        if (typeof data === 'string') return data;
+        if (data.error || data.detail) return data.error || data.detail;
+        const firstKey = Object.keys(data)[0];
+        const value = firstKey ? data[firstKey] : null;
+        if (Array.isArray(value)) return value[0];
+        if (typeof value === 'string') return value;
+        return fallback;
     }
 
     function renderLoginRequired() {
